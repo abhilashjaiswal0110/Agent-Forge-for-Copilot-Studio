@@ -40,6 +40,18 @@ export function parseMcpJson(text: string): McpConfig {
 
 /** Adds or replaces the Agent Forge browser server without touching other servers or inputs. */
 export function mergeMcpConfig(existing: McpConfig | undefined, profile: BrowserProfile): McpConfig {
+  return mergeServer(existing, PLAYWRIGHT_SERVER_ID, playwrightServer(profile));
+}
+
+/** Adds or replaces one server without touching other servers or inputs. */
+export function mergeServer(existing: McpConfig | undefined, id: string, server: McpServer): McpConfig {
   const base: McpConfig = existing && typeof existing === 'object' ? { ...existing } : {};
-  return { ...base, servers: { ...(base.servers ?? {}), [PLAYWRIGHT_SERVER_ID]: playwrightServer(profile) } };
+  return { ...base, servers: { ...(base.servers ?? {}), [id]: server } };
+}
+
+export const LINT_SERVER_ID = 'agent-forge';
+
+/** Read-only Agent Forge MCP server (lint, inventory, Mermaid) bundled with the extension. Needs Node.js on PATH. */
+export function lintServer(cliPath: string): McpServer {
+  return { type: 'stdio', command: 'node', args: [cliPath, 'mcp', '${workspaceFolder}'] };
 }

@@ -1,6 +1,6 @@
 # Agent Forge for Copilot Studio – product plan
 
-Status: **private preview** (v0.1.0). This is the public-safe roadmap; it contains no
+Status: **private preview** (v0.2.0). This is the public-safe roadmap; it contains no
 customer or solution-specific content.
 
 ## 1. Name
@@ -17,7 +17,7 @@ Do not use Microsoft logos or "Microsoft" in the name.
 
 | Topic | Decision |
 |---|---|
-| Publisher | `abhilashjaiswal0110` (create the Marketplace publisher with this id before the first upload) |
+| Publisher | `AbhilashJaiswal` (Marketplace publisher created; set in `package.json`) |
 | Visibility | Private repository and `private: true` until GA readiness, then MIT and public |
 | Harnesses | Standard and GitHub Copilot (new agent experience), both first-class |
 | Browser co-pilot | Playwright MCP with an **isolated** profile by default; signed-in browser via `--extension` only by explicit setting |
@@ -54,8 +54,8 @@ Differentiators against existing Copilot Studio extensions:
 | Phase | Scope | Exit criteria | Status |
 |---|---|---|---|
 | 0. Foundations | Repo, CI, deny-list gate, core parser for both layouts, Contoso sample | Large private fixture parses with 0 errors | **Done** |
-| 1. See & Lint | Agent explorer, architecture graph, 16 rules → 25, quick fixes, Agent Plugin v1, walkthrough | Lint finds seeded issues; sample is clean | **In progress** (explorer, graph, 16 rules, plugin v1 done) |
-| 2. Ship | pac pull/push/publish, snapshots, release evidence, environment profiles, MCP server v1 | End-to-end round trip in a dev environment | **Started** (pull/push/publish, snapshots, evidence done) |
+| 1. See & Lint | Agent explorer, architecture graph, 16 rules → 25, quick fixes, Agent Plugin v1, walkthrough | Lint finds seeded issues; sample is clean | **Done** (v0.2.0: 25 rules, 7 quick fixes, walkthrough) |
+| 2. Ship | pac pull/push/publish, snapshots, release evidence, environment profiles, MCP server v1 | End-to-end round trip in a dev environment | **In progress** (pull/push/publish with CLI preflight, snapshots, evidence, CLI + SARIF, MCP server v1 done; dev round trip and environment profiles open) |
 | 3. Build | Orchestrator blueprint wizard, instruction and HITL templates, guardrail hooks | New user builds 1 orchestrator + 3 spokes + 1 write agent in < 60 min | Planned |
 | 4. Prove | Eval studio: CSV generator and validator, results analyser, failure triage | Generated CSVs import cleanly | Planned |
 | 5. Browser co-pilot | Portal recipes (add tool, test-pane trace capture, list provisioning) | Recipes run with consent prompts | **Started** (MCP config + tester agent) |
@@ -68,7 +68,33 @@ Differentiators against existing Copilot Studio extensions:
 - No network calls without user action (telemetry aside, which honours VS Code settings).
 - Deny-list gate green on every commit.
 
-## 7. Go-to-market (at public launch)
+### Phase 2 exit test: dev-environment round trip (manual, maintainer only)
+
+Run against a throwaway agent in a **dev** environment, never production. Prerequisite: a Power
+Platform CLI that lists `pull` and `push` under `pac copilot help` (2.4.1 does not; run
+`pac install latest`). Agent Forge now checks this before every lifecycle step.
+
+1. `pac auth select` the dev profile; `pac copilot clone` a scratch agent into an empty folder.
+2. Open the folder; confirm the agent appears and lint has no errors.
+3. **Pull** → expect "no changes" and a snapshot in extension storage.
+4. Edit one description; **Push Agent as Draft** → expect success and a draft in the portal.
+5. Change the same item in the portal, edit it locally, push → expect the "pull first" error;
+   pull, resolve, push again.
+6. **Publish Agent** (type the name) → expect success; pull again → no pending changes.
+7. Check `release-evidence.jsonl` has one entry per step with exit code 0.
+
+## 7. Next steps
+
+1. Run the Phase 2 exit test above and record the result here.
+2. Environment profiles (dev/test/prod mapping per agent folder) for Phase 2.
+3. Orchestrator blueprint wizard with instruction and HITL templates (Phase 3).
+4. Eval studio: test-set CSV generator and validator, results analyser (Phase 4).
+5. Browser recipes for portal-only steps with consent prompts (Phase 5).
+6. Publish the CLI and MCP server to npm so CI does not need a repository checkout.
+7. Parser tolerance: portal-generated Power Fx values such as `text: ="... : ..."` are invalid
+   strict YAML and raise YAML001; decide whether to accept them with a dedicated info rule.
+
+## 8. Go-to-market (at public launch)
 
 - Listing SEO: "Copilot Studio", "multi-agent", "orchestrator", "agents", "Power Platform";
   hero GIF, feature table, 60-second quick start.
@@ -79,7 +105,7 @@ Differentiators against existing Copilot Studio extensions:
 - KPIs: installs, 30-day active users, first successful publish, rating ≥ 4.5.
   Targets: 5K installs in 6 months, 25K in 12 months.
 
-## 8. Risks
+## 9. Risks
 
 | Risk | Mitigation |
 |---|---|

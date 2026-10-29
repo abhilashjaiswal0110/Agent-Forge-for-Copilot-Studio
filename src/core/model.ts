@@ -33,6 +33,8 @@ export interface Component {
   /** Description from SKILL.md front matter (skills only). */
   skillMdDescription?: string;
   skillMdFile?: string;
+  /** Dialog schema names referenced by BeginDialog nodes (standard topics only). */
+  dialogRefs?: string[];
 }
 
 export interface SyncMetadata {
@@ -48,6 +50,8 @@ export interface AgentModel {
   root: string;
   harness: Harness;
   harnessEvidence: string[];
+  /** False for standard agents on classic (non-generative) orchestration, where instructions are not used. */
+  generative: boolean;
   settingsFile?: string;
   agentFile?: string;
   instructions: string;

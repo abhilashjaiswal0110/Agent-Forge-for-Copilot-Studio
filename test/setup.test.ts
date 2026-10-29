@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mergeMcpConfig, parseMcpJson, PLAYWRIGHT_SERVER_ID, playwrightServer } from '../src/setup/mcpConfig';
+import { LINT_SERVER_ID, lintServer, mergeMcpConfig, mergeServer, parseMcpJson, PLAYWRIGHT_SERVER_ID, playwrightServer } from '../src/setup/mcpConfig';
 
 describe('browser co-pilot MCP config', () => {
   it('uses an isolated profile by default and the extension bridge on request', () => {
@@ -25,6 +25,12 @@ describe('browser co-pilot MCP config', () => {
 
   it('treats an empty file as an empty config', () => {
     expect(parseMcpJson('\uFEFF  ')).toEqual({});
+  });
+
+  it('adds the Agent Forge lint server next to existing servers', () => {
+    const merged = mergeServer(mergeMcpConfig(undefined, 'isolated'), LINT_SERVER_ID, lintServer('/ext/dist/cli.js'));
+    expect(Object.keys(merged.servers ?? {})).toEqual([PLAYWRIGHT_SERVER_ID, LINT_SERVER_ID]);
+    expect(lintServer('/ext/dist/cli.js')).toEqual({ type: 'stdio', command: 'node', args: ['/ext/dist/cli.js', 'mcp', '${workspaceFolder}'] });
   });
 });
 

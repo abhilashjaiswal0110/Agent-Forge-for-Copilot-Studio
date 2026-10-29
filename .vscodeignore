@@ -1,8 +1,10 @@
 **
 !dist/extension.js
+!dist/cli.js
 !package.json
 !README.md
 !CHANGELOG.md
 !LICENSE
+!media/**
 !plugin/**
 !samples/**

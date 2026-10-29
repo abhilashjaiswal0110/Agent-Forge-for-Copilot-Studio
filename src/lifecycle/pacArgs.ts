@@ -23,3 +23,15 @@ export function pacArgs(step: LifecycleStep, t: PacTarget): string[] {
     }
   }
 }
+
+/**
+ * True when `pac copilot help` output lists the verb a step needs. `pull` and `push` only exist in
+ * recent Power Platform CLI releases; `publish` has been available for a long time.
+ */
+export function pacSupports(step: LifecycleStep, copilotHelp: string): boolean {
+  return new RegExp(`^\\s*${step}\\b`, 'm').test(copilotHelp) || new RegExp(`\\[${step}\\]`).test(copilotHelp);
+}
+
+export function pacVersion(text: string): string | undefined {
+  return /Version:\s*([\d.]+)/.exec(text)?.[1];
+}

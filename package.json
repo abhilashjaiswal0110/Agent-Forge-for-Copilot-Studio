@@ -2,10 +2,10 @@
   "name": "cps-agent-forge",
   "displayName": "Agent Forge for Copilot Studio",
   "description": "Design, lint, visualise and ship enterprise multi-agent orchestrators on Microsoft Copilot Studio - standard and GitHub Copilot (new agent experience) harnesses.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "preview": true,
   "private": true,
-  "publisher": "abhilashjaiswal0110",
+  "publisher": "AbhilashJaiswal",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
@@ -93,6 +93,29 @@
         "title": "Install Copilot Studio Skills into Workspace",
         "category": "Agent Forge",
         "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.fixAll",
+        "title": "Apply All Safe Quick Fixes",
+        "category": "Agent Forge",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "agentForge.disableRule",
+        "title": "Disable Lint Rule...",
+        "category": "Agent Forge"
+      },
+      {
+        "command": "agentForge.configureLintServer",
+        "title": "Configure Agent Forge MCP Server (lint, inventory, Mermaid)",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.openWalkthrough",
+        "title": "Get Started",
+        "category": "Agent Forge",
+        "icon": "$(question)"
       }
     ],
     "viewsContainers": {
@@ -115,7 +138,7 @@
     "viewsWelcome": [
       {
         "view": "agentForge.agents",
-        "contents": "No Copilot Studio agent found in this workspace.\nClone one with the Power Platform CLI (pac copilot clone) or the Copilot Studio extension, then refresh.\n[Refresh](command:agentForge.refresh)"
+        "contents": "No Copilot Studio agent found in this workspace.\nClone one with the Power Platform CLI (pac copilot clone) or the Copilot Studio extension, then refresh.\n[Refresh](command:agentForge.refresh)\n[Get Started](command:agentForge.openWalkthrough)"
       }
     ],
     "menus": {
@@ -129,6 +152,16 @@
           "command": "agentForge.showGraph",
           "when": "view == agentForge.agents",
           "group": "navigation"
+        },
+        {
+          "command": "agentForge.fixAll",
+          "when": "view == agentForge.agents",
+          "group": "navigation@3"
+        },
+        {
+          "command": "agentForge.openWalkthrough",
+          "when": "view == agentForge.agents",
+          "group": "navigation@9"
         }
       ],
       "view/item/context": [
@@ -179,7 +212,85 @@
           "description": "Browser profile used by the browser co-pilot (Playwright MCP)."
         }
       }
-    }
+    },
+    "walkthroughs": [
+      {
+        "id": "agentForge.gettingStarted",
+        "title": "Get started with Agent Forge for Copilot Studio",
+        "description": "Clone, explore, lint, fix and ship multi-agent Copilot Studio solutions from VS Code.",
+        "steps": [
+          {
+            "id": "clone",
+            "title": "Bring your agents into VS Code",
+            "description": "Clone every agent of your solution side by side with the Power Platform CLI.\n[Open Folder](command:workbench.action.files.openFolder)",
+            "media": {
+              "markdown": "media/walkthrough/clone.md"
+            },
+            "completionEvents": [
+              "onCommand:workbench.action.files.openFolder",
+              "onContext:agentForge.hasAgents"
+            ]
+          },
+          {
+            "id": "explore",
+            "title": "Explore and visualise",
+            "description": "See every agent and component, then draw the orchestrator architecture.\n[Show Architecture Graph](command:agentForge.showGraph)",
+            "media": {
+              "markdown": "media/walkthrough/explore.md"
+            },
+            "completionEvents": [
+              "onCommand:agentForge.showGraph"
+            ]
+          },
+          {
+            "id": "lint",
+            "title": "Lint and fix",
+            "description": "25 rules for routing, multi-agent depth, security and human in the loop, with quick fixes.\n[Lint Workspace](command:agentForge.lint)\n[Apply All Safe Quick Fixes](command:agentForge.fixAll)",
+            "media": {
+              "markdown": "media/walkthrough/lint.md"
+            },
+            "completionEvents": [
+              "onCommand:agentForge.lint",
+              "onCommand:agentForge.fixAll"
+            ]
+          },
+          {
+            "id": "ship",
+            "title": "Ship with safety gates",
+            "description": "Pull, push a draft and publish with lint gates, confirmations and snapshots.\n[Open Agent Forge view](command:agentForge.agents.focus)",
+            "media": {
+              "markdown": "media/walkthrough/ship.md"
+            },
+            "completionEvents": [
+              "onCommand:agentForge.pull",
+              "onCommand:agentForge.push",
+              "onCommand:agentForge.publish"
+            ]
+          },
+          {
+            "id": "copilots",
+            "title": "Add expert skills and co-pilots",
+            "description": "Install skills and configure the Agent Forge and browser MCP servers.\n[Install Skills](command:agentForge.installSkills)\n[Configure Agent Forge MCP Server](command:agentForge.configureLintServer)",
+            "media": {
+              "markdown": "media/walkthrough/copilots.md"
+            },
+            "completionEvents": [
+              "onCommand:agentForge.installSkills",
+              "onCommand:agentForge.configureLintServer",
+              "onCommand:agentForge.configureBrowser"
+            ]
+          },
+          {
+            "id": "ci",
+            "title": "Run the same checks in CI",
+            "description": "Use the bundled command-line tool to fail builds on errors and publish SARIF.",
+            "media": {
+              "markdown": "media/walkthrough/ci.md"
+            }
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.mjs",
@@ -200,5 +311,8 @@
     "esbuild": "^0.24.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "bin": {
+    "agent-forge": "./dist/cli.js"
   }
 }
