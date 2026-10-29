@@ -33,6 +33,8 @@ export interface Component {
   /** Description from SKILL.md front matter (skills only). */
   skillMdDescription?: string;
   skillMdFile?: string;
+  /** Dialog schema names referenced by BeginDialog nodes (standard topics only). */
+  dialogRefs?: string[];
 }
 
 export interface SyncMetadata {

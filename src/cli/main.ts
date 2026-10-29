@@ -1,0 +1,130 @@
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { applyFixes, atLeast, fixesFor, format, lint, loadWorkspace, RULES, toMermaid, type ReportFormat, type Severity } from '../core';
+import { runStdioServer } from '../mcp/server';
+
+export interface CliIO {
+  out: (s: string) => void;
+  err: (s: string) => void;
+  cwd: string;
+  version: string;
+}
+
+export const USAGE = `Agent Forge for Copilot Studio - command-line checks
+
+Usage:
+  agent-forge lint [folders...] [options]   Lint cloned agents (default folder: current directory)
+  agent-forge rules [--format text|json]    List lint rules
+  agent-forge graph [folders...]            Print the architecture as a Mermaid flowchart
+  agent-forge mcp [folder]                  Start the read-only MCP server on stdio (default folder: current directory)
+  agent-forge --version | --help
+
+Lint options:
+  --format text|json|sarif   Output format (default text)
+  --output <file>            Write the report to a file instead of stdout
+  --fail-on error|warning|info|never
+                             Exit with code 1 when findings at or above this severity exist (default error)
+  --disable <ids>            Comma-separated rule ids to skip, for example DESC002,UX001
+  --fix                      Apply safe quick fixes, then re-lint
+
+Exit codes: 0 success, 1 findings at or above --fail-on, 2 usage error.`;
+
+interface Parsed {
+  command: string;
+  folders: string[];
+  flags: Map<string, string | true>;
+}
+
+const VALUE_FLAGS = new Set(['format', 'output', 'fail-on', 'disable']);
+
+export function parseArgs(argv: string[]): Parsed {
+  const [command = 'help', ...rest] = argv;
+  const flags = new Map<string, string | true>();
+  const folders: string[] = [];
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (a.startsWith('--')) {
+      const eq = a.indexOf('=');
+      const k = eq < 0 ? a.slice(2) : a.slice(2, eq);
+      const inline = eq < 0 ? undefined : a.slice(eq + 1);
+      if (VALUE_FLAGS.has(k)) {
+        const v = inline ?? rest[++i];
+        if (v === undefined) throw new Error(`--${k} needs a value`);
+        flags.set(k, v);
+      } else flags.set(k, true);
+    } else folders.push(a);
+  }
+  return { command, folders, flags };
+}
+
+function oneOf<T extends string>(value: string | true | undefined, allowed: readonly T[], fallback: T, flag: string): T {
+  if (value === undefined) return fallback;
+  if (typeof value === 'string' && (allowed as readonly string[]).includes(value)) return value as T;
+  throw new Error(`--${flag} must be one of ${allowed.join(', ')}`);
+}
+
+export async function runCli(argv: string[], io: CliIO): Promise<number> {
+  let p: Parsed;
+  try {
+    p = parseArgs(argv);
+  } catch (e) {
+    io.err((e as Error).message);
+    return 2;
+  }
+  if (p.command === '--version' || p.command === '-v') {
+    io.out(io.version);
+    return 0;
+  }
+  if (p.command === 'help' || p.command === '--help' || p.command === '-h' || p.flags.has('help')) {
+    io.out(USAGE);
+    return 0;
+  }
+
+  const folders = (p.folders.length ? p.folders : ['.']).map((f) => resolve(io.cwd, f));
+  try {
+    switch (p.command) {
+      case 'rules': {
+        const fmt = oneOf(p.flags.get('format'), ['text', 'json'] as const, 'text', 'format');
+        io.out(fmt === 'json' ? JSON.stringify(RULES, null, 2) : RULES.map((r) => `${r.id.padEnd(8)} ${r.severity.padEnd(8)} ${r.title}`).join('\n'));
+        return 0;
+      }
+      case 'graph':
+        io.out(toMermaid(loadWorkspace(folders)));
+        return 0;
+      case 'mcp':
+        await runStdioServer(io.version, folders[0]);
+        return 0;
+      case 'lint': {
+        const fmt = oneOf<ReportFormat>(p.flags.get('format'), ['text', 'json', 'sarif'], 'text', 'format');
+        const failOn = oneOf(p.flags.get('fail-on'), ['error', 'warning', 'info', 'never'] as const, 'error', 'fail-on');
+        const disable = p.flags.get('disable');
+        const disabledRules = typeof disable === 'string' ? disable.split(',').map((s) => s.trim()).filter(Boolean) : [];
+
+        let ws = loadWorkspace(folders);
+        let findings = lint(ws, { disabledRules });
+        if (p.flags.has('fix')) {
+          const fixes = findings.flatMap((f) => fixesFor(f, ws)).filter((f) => f.safe);
+          const changed = applyFixes(fixes);
+          io.err(`Applied ${fixes.length} fix(es) to ${new Set(changed).size} file(s).`);
+          ws = loadWorkspace(folders);
+          findings = lint(ws, { disabledRules });
+        }
+        if (!ws.agents.length && !ws.parseErrors.length) io.err('No Copilot Studio agent found (looked for agent.mcs.yml or settings.mcs.yml).');
+
+        const report = format(fmt, findings, io.cwd, io.version);
+        const output = p.flags.get('output');
+        if (typeof output === 'string') {
+          writeFileSync(resolve(io.cwd, output), report + '\n');
+          io.err(`Report written to ${output}.`);
+        } else io.out(report);
+        return failOn !== 'never' && atLeast(findings, failOn as Severity).length ? 1 : 0;
+      }
+      default:
+        io.err(`Unknown command "${p.command}".\n\n${USAGE}`);
+        return 2;
+    }
+  } catch (e) {
+    io.err((e as Error).message);
+    return 2;
+  }
+}

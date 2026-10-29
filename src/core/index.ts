@@ -1,6 +1,10 @@
 export * from './model';
 export { loadWorkspace, findAgentRoots, parseAgent, detectHarness } from './workspace';
-export { lint, RULES } from './rules';
+export { lint, RULES, looksLikeSecret, insecureUrl, MAX_INSTRUCTIONS, MAX_DESCRIPTION } from './rules';
 export type { LintOptions } from './rules';
 export { toMermaid, layout } from './graph';
 export type { LayoutNode, LayoutEdge } from './graph';
+export { fixesFor, applyFixes, yamlScalar, FIXABLE_RULES } from './fixes';
+export type { QuickFix, TextEdit } from './fixes';
+export { format, formatText, formatJson, formatSarif, atLeast, summary } from './report';
+export type { ReportFormat } from './report';

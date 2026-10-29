@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
-import { lint, loadWorkspace, RULES, type AgentModel, type Finding, type WorkspaceModel } from './core';
+import { fixesFor, lint, loadWorkspace, RULES, type AgentModel, type Finding, type WorkspaceModel } from './core';
 import { Lifecycle } from './lifecycle/lifecycle';
 import type { LifecycleStep } from './lifecycle/pacArgs';
-import { configureBrowser, installSkills } from './setup/setupCommands';
+import { configureBrowser, configureLintServer, installSkills } from './setup/setupCommands';
 import { Telemetry } from './telemetry';
 import { AgentTreeProvider, type Node } from './views/agentTree';
 import { GraphPanel } from './views/graphPanel';
+import { AgentForgeCodeActions, toWorkspaceEdit } from './views/quickFixes';
 
 const SEVERITY: Record<Finding['severity'], vscode.DiagnosticSeverity> = {
   error: vscode.DiagnosticSeverity.Error,
@@ -23,6 +24,13 @@ export function activate(context: vscode.ExtensionContext) {
   let findings: Finding[] = [];
 
   context.subscriptions.push(output, telemetry, diagnostics, vscode.window.registerTreeDataProvider('agentForge.agents', tree));
+  context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      [{ scheme: 'file', pattern: '**/*.{yml,yaml}' }, { scheme: 'file', pattern: '**/SKILL.md' }],
+      new AgentForgeCodeActions(() => ({ model, findings })),
+      { providedCodeActionKinds: AgentForgeCodeActions.kinds }
+    )
+  );
 
   const refresh = () => {
     const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => f.uri.fsPath);
@@ -101,7 +109,45 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('agentForge.push', lifecycleCommand('push')),
     vscode.commands.registerCommand('agentForge.publish', lifecycleCommand('publish')),
     vscode.commands.registerCommand('agentForge.configureBrowser', () => configureBrowser(telemetry)),
-    vscode.commands.registerCommand('agentForge.installSkills', () => installSkills(context, telemetry))
+    vscode.commands.registerCommand('agentForge.installSkills', () => installSkills(context, telemetry)),
+    vscode.commands.registerCommand('agentForge.configureLintServer', () => configureLintServer(context, telemetry)),
+    vscode.commands.registerCommand('agentForge.fixAll', async () => {
+      refresh();
+      const fixes = findings.flatMap((f) => fixesFor(f, model)).filter((f) => f.safe);
+      if (!fixes.length) return void vscode.window.showInformationMessage('Agent Forge: no safe quick fixes available.');
+      const files = new Set(fixes.flatMap((f) => [...f.edits.map((e) => e.file), ...f.creates.map((c) => c.file)]));
+      const apply = 'Apply';
+      const answer = await vscode.window.showWarningMessage(
+        `Apply ${fixes.length} safe quick fix(es) to ${files.size} file(s)? You can undo them in each editor.`,
+        { modal: true },
+        apply
+      );
+      if (answer !== apply) return;
+      const ok = await vscode.workspace.applyEdit(toWorkspaceEdit(fixes));
+      if (ok) {
+        const touched = [...files].map((f) => vscode.Uri.file(f).toString());
+        for (const doc of vscode.workspace.textDocuments) if (doc.isDirty && touched.includes(doc.uri.toString())) await doc.save();
+      }
+      const byRule: Record<string, number> = {};
+      for (const f of fixes) byRule[f.ruleId] = (byRule[f.ruleId] ?? 0) + 1;
+      telemetry.event('command.fixAll', { success: String(ok) }, { fixes: fixes.length, files: files.size, ...byRule });
+      refresh();
+    }),
+    vscode.commands.registerCommand('agentForge.disableRule', async (ruleId?: string) => {
+      const id = ruleId ?? (await vscode.window.showQuickPick(RULES.map((r) => ({ label: r.id, description: r.title })), { title: 'Disable a lint rule' }))?.label;
+      if (!id || !RULES.some((r) => r.id === id)) return;
+      const config = vscode.workspace.getConfiguration('agentForge');
+      const current = config.get<string[]>('lint.disabledRules', []);
+      if (!current.includes(id)) {
+        const target = vscode.workspace.workspaceFolders?.length ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;
+        await config.update('lint.disabledRules', [...current, id], target);
+      }
+      telemetry.event('command.disableRule', { rule: id });
+    }),
+    vscode.commands.registerCommand('agentForge.openWalkthrough', () => {
+      telemetry.event('command.openWalkthrough');
+      return vscode.commands.executeCommand('workbench.action.openWalkthrough', `${context.extension.id}#agentForge.gettingStarted`, false);
+    })
   );
 
   refresh();

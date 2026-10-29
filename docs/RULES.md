@@ -24,6 +24,30 @@ Errors block **Push** and **Publish** unless you explicitly override.
 | DRY001 | Info | GitHub Copilot | Duplicated skill content | The same skill copied into many agents drifts. Keep one canonical source. |
 | FMT001 | Error | Any | Name too long | Component and schema names are limited to 100 characters. |
 | FMT002 | Warning | Any | Colon-space in knowledge description | Knowledge descriptions containing `: ` are a known source of sync and rendering problems. |
+| INST001 | Warning | Any | Missing instructions | Without instructions the agent has no role, scope or rules; routing and tone fall back to defaults. |
+| INST002 | Warning | Any | Instructions too long | Instructions are capped at 8,000 characters. Move procedures into skills, topics or knowledge; keep role, scope and hard rules. |
+| MA004 | Info | Any | More than one write agent | Keep a single connected agent that changes data so confirmations, audit and permissions live in one place. |
+| SEC003 | Error | Any | Hard-coded secret | Keys, passwords, bearer tokens, SAS signatures and private keys in agent files leak through source control and solution exports. The secret is never echoed in the finding. |
+| SEC004 | Warning | Any | Insecure http URL | Knowledge sources, tools and links should use https. `localhost` and schema URIs are exempt. |
+| HITL002 | Warning | GitHub Copilot | Auto-approved write operations | An `allowedTools` list that still contains write operations should not use `AlwaysApprove`. |
+| SKL002 | Warning | GitHub Copilot | Skill without SKILL.md | A skill folder needs `SKILL.md` with `name` and `description` front matter. |
+| TOP001 | Warning | Standard | Redirect to missing topic | A `BeginDialog` node targeting `<schema>.topic.<Name>` that is not in the agent fails at runtime. |
+| FMT003 | Info | Any | Description too long | Descriptions over 1,024 characters dilute routing and may be truncated. |
+
+## Quick fixes
+
+Press <kbd>Ctrl</kbd>+<kbd>.</kbd> on a finding. Every finding also offers **Disable rule … in
+this workspace**. **Agent Forge: Apply All Safe Quick Fixes** and `agent-forge lint --fix`
+apply only the *safe* fixes.
+
+| Rule | Fix | Safe |
+|---|---|---|
+| FMT002 | Replace `: ` with ` - ` in the description | Yes |
+| SEC002, HITL002 | Switch `toolPermissionMode` from `AlwaysApprove` to `AlwaysAsk` | Yes |
+| SKL001 | Copy the `skill.mcs.yml` description into `SKILL.md` | Yes |
+| SKL002 | Create `SKILL.md` from `skill.mcs.yml` metadata | Yes |
+| SEC001 | Add an empty `allowedTools` list to fill in | No – review, then list the operations |
+| SEC004 | Switch the URL to https | No – confirm the host serves https |
 
 ## Heuristics
 
@@ -35,3 +59,9 @@ Errors block **Push** and **Publish** unless you explicitly override.
   Knowledge sources are exempt.
 - **Waiting language** (UX001): agents with connected-agent, MCP or workflow tools should
   mention "wait", "one moment", "this may take" or similar in their instructions.
+- **Write agent** (MA004): a connected agent counts as write-capable when it has a write-capable
+  tool (see HITL001). Only connected agents cloned in the workspace are checked.
+- **Secrets** (SEC003): a key such as `apiKey`, `client_secret`, `password` or `access_token`
+  followed by a literal of 12+ characters with letters and digits, or a bearer token, SAS
+  `sig=`, `AccountKey=` or PEM private key. Power Fx (`=Env.X`), `${VAR}` and `{...}` references
+  are ignored.

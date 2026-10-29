@@ -13,7 +13,14 @@ export function readText(file: string): string {
 }
 
 export function readYaml(file: string, errors: ParseError[]): Yaml {
-  const text = readText(file);
+  let text: string;
+  try {
+    text = readText(file);
+  } catch (e) {
+    // For example cloud-only OneDrive placeholders or locked files; report and keep scanning.
+    errors.push({ file, message: `File could not be read (${(e as NodeJS.ErrnoException).code ?? 'error'}).`, line: 0 });
+    return undefined;
+  }
   const lineCounter = new LineCounter();
   const doc = parseDocument(text, { lineCounter, uniqueKeys: false, prettyErrors: false });
   if (doc.errors.length) {
@@ -40,6 +47,16 @@ function collectStrings(v: unknown, out: string[] = []): string[] {
   if (typeof v === 'string') out.push(v);
   else if (Array.isArray(v)) v.forEach((x) => collectStrings(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => collectStrings(x, out));
+  return out;
+}
+
+function collectDialogRefs(v: unknown, out: string[] = []): string[] {
+  if (Array.isArray(v)) v.forEach((x) => collectDialogRefs(x, out));
+  else if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    if (o.kind === 'BeginDialog' && typeof o.dialog === 'string') out.push(o.dialog);
+    Object.values(o).forEach((x) => collectDialogRefs(x, out));
+  }
   return out;
 }
 
@@ -82,7 +99,8 @@ export function findAgentRoots(root: string, maxDepth = 6): string[] {
 export function detectHarness(root: string, settings: Yaml, agentYaml: Yaml): { harness: Harness; evidence: string[] } {
   const ghcp: string[] = [];
   const std: string[] = [];
-  for (const d of ['behaviors', 'capabilities', 'infrastructure', 'workflows']) if (isDir(join(root, d))) ghcp.push(`${d}/`);
+  // workflows/ (cloud flows) appears in both harnesses, so it is not evidence either way.
+  for (const d of ['behaviors', 'capabilities', 'infrastructure']) if (isDir(join(root, d))) ghcp.push(`${d}/`);
   for (const d of ['topics', 'actions', 'variables', 'agents']) if (isDir(join(root, d))) std.push(`${d}/`);
   const recognizer = str(get(settings, 'configuration', 'recognizer', 'kind'));
   if (recognizer === 'CLICopilotRecognizer') ghcp.push('recognizer CLICopilotRecognizer');
@@ -145,10 +163,14 @@ function parseGithubCopilotComponents(root: string, errors: ParseError[]): Compo
     const c = metaComponent('skill', file, y, true);
     const skillMd = join(dirname(file), 'SKILL.md');
     if (existsSync(skillMd)) {
-      const text = readText(skillMd);
       c.skillMdFile = skillMd;
-      c.skillMdDescription = parseFrontMatter(text).description;
-      c.contentHash = hash(text);
+      try {
+        const text = readText(skillMd);
+        c.skillMdDescription = parseFrontMatter(text).description;
+        c.contentHash = hash(text);
+      } catch (e) {
+        errors.push({ file: skillMd, message: `File could not be read (${(e as NodeJS.ErrnoException).code ?? 'error'}).`, line: 0 });
+      }
     }
     out.push(c);
   }
@@ -195,6 +217,7 @@ function parseStandardComponents(root: string, errors: ParseError[]): Component[
     c.name = str(get(y, 'beginDialog', 'intent', 'displayName')) ?? c.name;
     c.description = str(get(y, 'beginDialog', 'intent', 'modelDescription')) ?? str(get(y, 'modelDescription')) ?? c.description;
     c.routable = trigger === 'OnRecognizedIntent';
+    c.dialogRefs = collectDialogRefs(y);
     out.push(c);
   }
 

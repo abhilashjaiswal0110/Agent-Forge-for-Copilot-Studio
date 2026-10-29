@@ -9,6 +9,9 @@ description: Reviews Copilot Studio agent YAML for routing, security, human-in-t
 
 1. Run **Agent Forge: Lint Workspace** (or read the Problems panel, source "Agent Forge").
    Each finding has a rule id; the rule catalogue is in the extension's `docs/RULES.md`.
+   Outside VS Code, use the `agent-forge` MCP server's `lint` tool or
+   `node dist/cli.js lint <folder> --format json`. Prefer the built-in quick fixes
+   (**Apply All Safe Quick Fixes**) before hand-editing.
 2. Open **Agent Forge: Show Architecture Graph** to see orchestrators, connected agents and
    unresolved targets.
 3. Find each agent root (folder containing `settings.mcs.yml` or `agent.mcs.yml`) and

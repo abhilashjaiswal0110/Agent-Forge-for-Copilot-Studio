@@ -1,9 +1,10 @@
+import { execFile } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { lint, loadWorkspace, type AgentModel } from '../core';
 import type { Telemetry } from '../telemetry';
-import { pacArgs, type LifecycleStep } from './pacArgs';
+import { pacArgs, pacSupports, pacVersion, type LifecycleStep } from './pacArgs';
 
 const MAX_SNAPSHOTS = 10;
 
@@ -56,11 +57,59 @@ export class Lifecycle {
     });
   }
 
+  private readonly helpCache = new Map<string, string | undefined>();
+
+  private copilotHelp(pac: string): Promise<string | undefined> {
+    if (this.helpCache.has(pac)) return Promise.resolve(this.helpCache.get(pac));
+    return new Promise((resolve) => {
+      // pac is a .cmd shim on Windows, which execFile can only start through a shell.
+      const windows = process.platform === 'win32';
+      const file = windows && /\s/.test(pac) && !pac.startsWith('"') ? `"${pac}"` : pac;
+      execFile(file, ['copilot', 'help'], { timeout: 60_000, windowsHide: true, shell: windows }, (_err, stdout, stderr) => {
+        const text = `${stdout ?? ''}\n${stderr ?? ''}`;
+        const result = /copilot/i.test(text) ? text : undefined;
+        if (result) this.helpCache.set(pac, result);
+        resolve(result);
+      });
+    });
+  }
+
+  /** Fails fast with guidance when pac is missing or too old for the step, instead of a failed terminal task. */
+  private async preflight(step: LifecycleStep): Promise<boolean> {
+    const pac = vscode.workspace.getConfiguration('agentForge').get<string>('pacPath', 'pac');
+    const help = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Window, title: 'Agent Forge: checking Power Platform CLI' },
+      () => this.copilotHelp(pac)
+    );
+    if (!help) {
+      const settings = 'Open Settings';
+      const choice = await vscode.window.showErrorMessage(
+        `Agent Forge: the Power Platform CLI ("${pac}") was not found. Install it and run "pac auth create", or set agentForge.pacPath.`,
+        settings
+      );
+      if (choice === settings) await vscode.commands.executeCommand('workbench.action.openSettings', 'agentForge.pacPath');
+      this.telemetry.event('lifecycle.preflight', { step, result: 'pacMissing' });
+      return false;
+    }
+    if (!pacSupports(step, help)) {
+      const copy = 'Copy update command';
+      const choice = await vscode.window.showErrorMessage(
+        `Agent Forge: your Power Platform CLI (${pacVersion(help) ?? 'unknown version'}) has no "pac copilot ${step}". Update it with "pac install latest" (or your package manager), then try again.`,
+        copy
+      );
+      if (choice === copy) await vscode.env.clipboard.writeText('pac install latest');
+      this.telemetry.event('lifecycle.preflight', { step, result: 'pacTooOld' });
+      return false;
+    }
+    return true;
+  }
+
   async run(step: LifecycleStep, agent: AgentModel): Promise<void> {
     if (!vscode.workspace.isTrusted) {
       void vscode.window.showWarningMessage('Agent Forge: lifecycle commands require a trusted workspace.');
       return;
     }
+    if (!(await this.preflight(step))) return;
     const env = agent.sync.environmentDisplayName ?? agent.sync.environmentId ?? 'the environment linked to this workspace';
 
     if (step === 'push' || step === 'publish') {
