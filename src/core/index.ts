@@ -8,3 +8,5 @@ export { fixesFor, applyFixes, yamlScalar, FIXABLE_RULES } from './fixes';
 export type { QuickFix, TextEdit } from './fixes';
 export { format, formatText, formatJson, formatSarif, atLeast, summary } from './report';
 export type { ReportFormat } from './report';
+export * from './blueprint';
+export * from './evals';

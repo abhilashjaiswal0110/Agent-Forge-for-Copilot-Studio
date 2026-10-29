@@ -17,8 +17,10 @@ description: Runs the safe Copilot Studio change lifecycle - pull, validate, pus
 1. **Pull** – `Agent Forge: Pull Agent` (runs `pac copilot pull --project-dir <agent>`).
    Always pull before editing; the portal may have changed. Agent Forge snapshots the folder
    first so you can roll back.
-2. **Edit** – descriptions, instructions, skills, topics. Do not hand-create tools,
-   connections or new agents; add those in the portal, then pull.
+2. **Edit** – descriptions, instructions, skills, topics. Do not hand-create tools or
+   connections; add those in the portal (browser recipe `add-mcp-tool`), then pull. Create new
+   agents with **Agent Forge: New Orchestrator Blueprint** (it runs `pac copilot init`) or the
+   portal, never by copying folders.
 3. **Validate** – `Agent Forge: Lint Workspace`. Errors block push. Also run the official
    validation if available (`/copilot-studio:validate`).
 4. **Push** – `Agent Forge: Push Agent as Draft` (`pac copilot push --project-dir <agent>`).
@@ -29,6 +31,9 @@ description: Runs the safe Copilot Studio change lifecycle - pull, validate, pus
 6. **Re-pull** – pull once more so on-disk files match what the service normalised.
 7. **Test** – exercise every changed route (see below). A change is verified only when the
    activity map shows the intended topic, tool or agent firing with sensible arguments.
+8. **Evaluate** – **Agent Forge: New Evaluation Test Set**, rewrite the questions like real
+   users, validate, import on the Evaluate tab (recipe `import-eval-test-set`), run, export and
+   **Analyse Evaluation Results**. Fix the largest failure category first.
 
 Agent Forge records each step in `release-evidence.jsonl` in its storage folder. Attach it to
 the change record if your team needs an audit trail.

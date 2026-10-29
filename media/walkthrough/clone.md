@@ -13,5 +13,5 @@ You can also clone from the Copilot Studio extension. Both the **standard** harn
 (`agent.mcs.yml`, `topics/`, `actions/`) and the **GitHub Copilot** harness (`settings.mcs.yml`,
 `behaviors/`, `capabilities/`) are supported.
 
-No agent yet? Open the bundled fictional `samples/contoso-it-helpdesk` folder from the
-extension's GitHub repository.
+No agent yet? **Open Contoso Sample** copies a fictional IT help desk (an orchestrator, two
+connected agents and a standard-harness agent) into a folder of your choice and opens it.

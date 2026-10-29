@@ -1,9 +1,11 @@
 Copyright (c) 2026 Abhilash Jaiswal. All rights reserved.
 
-This software and associated documentation files are proprietary and provided for private
-preview evaluation only. No license is granted to copy, modify, distribute, sublicense or
-publish the software, in whole or in part, without prior written permission of the copyright
-holder.
+This software and associated documentation files are proprietary and provided as a preview.
+
+You may install and use the extension, free of charge, as distributed through the Visual Studio
+Marketplace or as a .vsix provided by the copyright holder, including in commercial work. No
+other license is granted: you may not copy, modify, distribute, sublicense or publish the
+software, in whole or in part, without prior written permission of the copyright holder.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
 BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND

@@ -1,6 +1,29 @@
-import { writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { applyFixes, atLeast, fixesFor, format, lint, loadWorkspace, RULES, toMermaid, type ReportFormat, type Severity } from '../core';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import {
+  analysisMarkdown,
+  analyzeResults,
+  applyAgentPlan,
+  applyFixes,
+  atLeast,
+  blueprintReadme,
+  fixesFor,
+  format,
+  generateTestSet,
+  issuesText,
+  lint,
+  loadWorkspace,
+  planBlueprint,
+  RULES,
+  testSetCsv,
+  toMermaid,
+  TRIAGE_ADVICE,
+  validateSpec,
+  validateTestSet,
+  type BlueprintSpec,
+  type ReportFormat,
+  type Severity
+} from '../core';
 import { runStdioServer } from '../mcp/server';
 
 export interface CliIO {
@@ -17,6 +40,13 @@ Usage:
   agent-forge rules [--format text|json]    List lint rules
   agent-forge graph [folders...]            Print the architecture as a Mermaid flowchart
   agent-forge mcp [folder]                  Start the read-only MCP server on stdio (default folder: current directory)
+  agent-forge blueprint <spec.json> [--out <folder>]
+                                            Generate an orchestrator, read-only domain agents and one write agent
+  agent-forge eval generate [folder] [--agent <schemaName>] [--output <file.csv>]
+                                            Draft a Copilot Studio test set (Question, Expected response)
+  agent-forge eval validate <file.csv>      Check a test set against the Copilot Studio import rules
+  agent-forge eval analyze <results.csv> [--format text|json|markdown]
+                                            Triage results exported from the Evaluate tab
   agent-forge --version | --help
 
 Lint options:
@@ -35,7 +65,7 @@ interface Parsed {
   flags: Map<string, string | true>;
 }
 
-const VALUE_FLAGS = new Set(['format', 'output', 'fail-on', 'disable']);
+const VALUE_FLAGS = new Set(['format', 'output', 'fail-on', 'disable', 'agent', 'out']);
 
 export function parseArgs(argv: string[]): Parsed {
   const [command = 'help', ...rest] = argv;
@@ -118,6 +148,60 @@ export async function runCli(argv: string[], io: CliIO): Promise<number> {
           io.err(`Report written to ${output}.`);
         } else io.out(report);
         return failOn !== 'never' && atLeast(findings, failOn as Severity).length ? 1 : 0;
+      }
+      case 'blueprint': {
+        if (!p.folders.length) throw new Error('Usage: agent-forge blueprint <spec.json> [--out <folder>]');
+        const spec = JSON.parse(readFileSync(resolve(io.cwd, p.folders[0]), 'utf8')) as BlueprintSpec;
+        spec.spokes ??= [];
+        const errors = validateSpec(spec);
+        if (errors.length) {
+          io.err(errors.join('\n'));
+          return 1;
+        }
+        const out = resolve(io.cwd, typeof p.flags.get('out') === 'string' ? (p.flags.get('out') as string) : '.');
+        const plans = planBlueprint(spec);
+        const clash = plans.find((a) => existsSync(join(out, a.folder)));
+        if (clash) throw new Error(`Folder ${join(out, clash.folder)} already exists; choose another --out.`);
+        for (const a of plans) applyAgentPlan(join(out, a.folder), a);
+        writeFileSync(join(out, 'BLUEPRINT.md'), blueprintReadme(spec, plans));
+        io.out(`Created ${plans.length} agent folder(s) in ${out}: ${plans.map((a) => a.folder).join(', ')}.`);
+        return 0;
+      }
+      case 'eval': {
+        const [sub, target] = p.folders;
+        if (sub === 'generate') {
+          const ws = loadWorkspace([resolve(io.cwd, target ?? '.')]);
+          const wanted = p.flags.get('agent');
+          const candidates = typeof wanted === 'string' ? ws.agents.filter((a) => a.schemaName === wanted || a.name === wanted) : ws.agents.filter((a) => a.components.some((c) => c.kind === 'ConnectedAgentTool'));
+          const agent = candidates[0] ?? (ws.agents.length === 1 ? ws.agents[0] : undefined);
+          if (!agent) throw new Error(ws.agents.length ? `Several agents found; pass --agent <schemaName> (${ws.agents.map((a) => a.schemaName ?? a.name).join(', ')}).` : 'No agent found.');
+          const csv = testSetCsv(generateTestSet(agent, ws.agents));
+          const output = p.flags.get('output');
+          if (typeof output === 'string') {
+            writeFileSync(resolve(io.cwd, output), csv);
+            io.err(`Test set for "${agent.name}" written to ${output}. Review the drafted questions before importing.`);
+          } else io.out(csv.trimEnd());
+          return 0;
+        }
+        if (sub === 'validate' && target) {
+          const file = resolve(io.cwd, target);
+          const issues = validateTestSet(readFileSync(file, 'utf8'), statSync(file).size);
+          io.out(issuesText(issues));
+          return issues.some((i) => i.severity === 'error') ? 1 : 0;
+        }
+        if (sub === 'analyze' && target) {
+          const fmt = oneOf(p.flags.get('format'), ['text', 'json', 'markdown'] as const, 'text', 'format');
+          const a = analyzeResults(readFileSync(resolve(io.cwd, target), 'utf8'));
+          if (fmt === 'json') io.out(JSON.stringify(a, null, 2));
+          else if (fmt === 'markdown') io.out(analysisMarkdown(a));
+          else {
+            io.out(`${a.passed} passed, ${a.failed} failed, ${a.unknown} unknown of ${a.total}.`);
+            for (const [c, n] of Object.entries(a.byCategory)) io.out(`  ${c.padEnd(10)} ${n}  ${TRIAGE_ADVICE[c as keyof typeof TRIAGE_ADVICE]}`);
+            if (a.missingColumns.length) io.err(`Columns not found: ${a.missingColumns.join(', ')}.`);
+          }
+          return 0;
+        }
+        throw new Error('Usage: agent-forge eval generate [folder] | eval validate <file.csv> | eval analyze <results.csv>');
       }
       default:
         io.err(`Unknown command "${p.command}".\n\n${USAGE}`);

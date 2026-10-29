@@ -1,7 +1,26 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
-import { atLeast, fixesFor, formatJson, lint, loadWorkspace, RULES, summary, toMermaid, type Severity } from '../core';
+import {
+  analysisMarkdown,
+  analyzeResults,
+  atLeast,
+  blueprintReadme,
+  fixesFor,
+  formatJson,
+  generateTestSet,
+  lint,
+  loadWorkspace,
+  planBlueprint,
+  RULES,
+  summary,
+  testSetCsv,
+  toMermaid,
+  validateSpec,
+  validateTestSet,
+  type BlueprintSpec,
+  type Severity
+} from '../core';
 
 /** Minimal, read-only Model Context Protocol server over stdio (newline-delimited JSON-RPC 2.0). */
 
@@ -55,6 +74,43 @@ export const TOOLS = [
     description: 'Returns the orchestrator and connected-agent architecture as a Mermaid flowchart. Use when documenting or reviewing a multi-agent design.',
     inputSchema: { type: 'object', properties: pathArg },
     annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  {
+    name: 'generate_test_set',
+    title: 'Draft evaluation test set',
+    description: 'Drafts a Copilot Studio single-response test set (CSV with Question and Expected response) from an agent\'s routing descriptions plus safety cases. Use when preparing an evaluation run. Returns CSV text; nothing is written.',
+    inputSchema: { type: 'object', properties: { ...pathArg, agent: { type: 'string', description: 'Schema name or display name. Defaults to the orchestrator.' } } },
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  {
+    name: 'validate_test_set',
+    title: 'Validate evaluation test set',
+    description: 'Checks a test-set CSV against the Copilot Studio import rules (headers, 100 questions, 1,000 characters, 5 MB). Use before importing a test set.',
+    inputSchema: { type: 'object', properties: { file: { type: 'string', description: 'CSV path, relative to the server folder.' } }, required: ['file'] },
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  {
+    name: 'analyze_eval_results',
+    title: 'Analyse evaluation results',
+    description: 'Summarises a results CSV exported from the Copilot Studio Evaluate tab: pass rate per test method and failures grouped by triage category with advice. Use after an evaluation run.',
+    inputSchema: { type: 'object', properties: { file: { type: 'string', description: 'CSV path, relative to the server folder.' } }, required: ['file'] },
+    annotations: { readOnlyHint: true, openWorldHint: false }
+  },
+  {
+    name: 'plan_blueprint',
+    title: 'Plan an orchestrator blueprint',
+    description: 'Plans a hub-and-spoke solution (orchestrator, read-only domain agents, one write agent): schema names, instructions and files. Use when designing a new multi-agent solution. Returns the plan; nothing is written.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prefix: { type: 'string' },
+        orchestrator: { type: 'object', properties: { name: { type: 'string' }, purpose: { type: 'string' } }, required: ['name', 'purpose'] },
+        spokes: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, purpose: { type: 'string' } }, required: ['name', 'purpose'] } },
+        writer: { type: 'object', properties: { name: { type: 'string' }, purpose: { type: 'string' }, operations: { type: 'array', items: { type: 'string' } } } }
+      },
+      required: ['prefix', 'orchestrator', 'spokes']
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false }
   }
 ];
 
@@ -97,6 +153,31 @@ export function callTool(name: string, args: ToolArgs, cwd = process.cwd()): str
     }
     case 'architecture_mermaid':
       return toMermaid(loadWorkspace([folder(args, cwd)]));
+    case 'generate_test_set': {
+      const ws = loadWorkspace([folder(args, cwd)]);
+      const wanted = typeof args.agent === 'string' ? args.agent : undefined;
+      const agent = wanted
+        ? ws.agents.find((a) => a.schemaName === wanted || a.name === wanted)
+        : ws.agents.find((a) => a.components.some((c) => c.kind === 'ConnectedAgentTool')) ?? ws.agents[0];
+      if (!agent) throw new ToolError(wanted ? `Agent not found: ${wanted}` : 'No agent found.');
+      return testSetCsv(generateTestSet(agent, ws.agents));
+    }
+    case 'validate_test_set':
+    case 'analyze_eval_results': {
+      if (typeof args.file !== 'string') throw new ToolError('file is required.');
+      const file = resolve(cwd, args.file);
+      if (!existsSync(file)) throw new ToolError(`File not found: ${file}`);
+      const text = readFileSync(file, 'utf8');
+      return name === 'validate_test_set' ? JSON.stringify(validateTestSet(text, statSync(file).size), null, 2) : analysisMarkdown(analyzeResults(text));
+    }
+    case 'plan_blueprint': {
+      const spec = { ...args, spokes: Array.isArray(args.spokes) ? args.spokes : [] } as unknown as BlueprintSpec;
+      if (spec.writer && !Array.isArray(spec.writer.operations)) spec.writer.operations = [];
+      const errors = validateSpec(spec);
+      if (errors.length) throw new ToolError(errors.join('\n'));
+      const plans = planBlueprint(spec);
+      return JSON.stringify({ agents: plans.map((p) => ({ ...p, files: Object.keys(p.files) })), readme: blueprintReadme(spec, plans) }, null, 2);
+    }
     default:
       throw new ToolError(`Unknown tool: ${name}`);
   }

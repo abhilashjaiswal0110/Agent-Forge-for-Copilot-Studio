@@ -40,7 +40,17 @@ describe('bundled agent plugin', () => {
   it('documents every lint rule in docs/RULES.md', async () => {
     const { RULES } = await import('../src/core');
     const doc = readFileSync(resolve(__dirname, '..', 'docs', 'RULES.md'), 'utf8');
-    for (const r of RULES) expect(doc, r.id).toContain(`| ${r.id} |`);
+    const readme = readFileSync(resolve(__dirname, '..', 'README.md'), 'utf8');
+    for (const r of RULES) {
+      expect(doc, r.id).toContain(`| ${r.id} |`);
+      expect(readme, `README ${r.id}`).toContain(`| ${r.id} |`);
+    }
+  });
+
+  it('README has no repository-relative links (they break on the Marketplace while the repo is private)', () => {
+    const readme = readFileSync(resolve(__dirname, '..', 'README.md'), 'utf8');
+    expect(readme.match(/\]\((?!https?:|#)[^)]+\)/g) ?? []).toEqual([]);
+    expect(readme).not.toMatch(/!\[[^\]]*\]\([^)]*\.svg/i);
   });
 
   it('ships a plugin manifest and MCP config that parse', () => {

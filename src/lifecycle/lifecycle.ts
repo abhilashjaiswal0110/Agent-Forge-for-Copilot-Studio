@@ -36,14 +36,19 @@ export class Lifecycle {
     appendFileSync(path.join(this.storageDir(), 'release-evidence.jsonl'), JSON.stringify({ at: new Date().toISOString(), ...entry }) + '\n');
   }
 
-  private async runPac(agent: AgentModel, step: LifecycleStep, args: string[]): Promise<number | undefined> {
+  private runPac(agent: AgentModel, step: LifecycleStep, args: string[]): Promise<number | undefined> {
+    return this.runPacTask(`pac copilot ${step} (${agent.name})`, args, agent.root);
+  }
+
+  /** Runs pac as a VS Code task in a dedicated terminal and resolves with its exit code. */
+  async runPacTask(label: string, args: string[], cwd: string): Promise<number | undefined> {
     const pac = vscode.workspace.getConfiguration('agentForge').get<string>('pacPath', 'pac');
     const task = new vscode.Task(
-      { type: 'agentForge', step },
+      { type: 'agentForge', step: label },
       vscode.TaskScope.Workspace,
-      `pac copilot ${step} (${agent.name})`,
+      label,
       'Agent Forge',
-      new vscode.ProcessExecution(pac, args, { cwd: agent.root })
+      new vscode.ProcessExecution(pac, args, { cwd })
     );
     task.presentationOptions = { reveal: vscode.TaskRevealKind.Always, panel: vscode.TaskPanelKind.Dedicated, clear: true };
     const execution = await vscode.tasks.executeTask(task);
@@ -75,7 +80,7 @@ export class Lifecycle {
   }
 
   /** Fails fast with guidance when pac is missing or too old for the step, instead of a failed terminal task. */
-  private async preflight(step: LifecycleStep): Promise<boolean> {
+  async preflight(step: LifecycleStep | 'init'): Promise<boolean> {
     const pac = vscode.workspace.getConfiguration('agentForge').get<string>('pacPath', 'pac');
     const help = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Window, title: 'Agent Forge: checking Power Platform CLI' },

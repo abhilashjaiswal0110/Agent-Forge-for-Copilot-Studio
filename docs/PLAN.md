@@ -54,12 +54,12 @@ Differentiators against existing Copilot Studio extensions:
 | Phase | Scope | Exit criteria | Status |
 |---|---|---|---|
 | 0. Foundations | Repo, CI, deny-list gate, core parser for both layouts, Contoso sample | Large private fixture parses with 0 errors | **Done** |
-| 1. See & Lint | Agent explorer, architecture graph, 16 rules → 25, quick fixes, Agent Plugin v1, walkthrough | Lint finds seeded issues; sample is clean | **Done** (v0.2.0: 25 rules, 7 quick fixes, walkthrough) |
-| 2. Ship | pac pull/push/publish, snapshots, release evidence, environment profiles, MCP server v1 | End-to-end round trip in a dev environment | **In progress** (pull/push/publish with CLI preflight, snapshots, evidence, CLI + SARIF, MCP server v1 done; dev round trip and environment profiles open) |
-| 3. Build | Orchestrator blueprint wizard, instruction and HITL templates, guardrail hooks | New user builds 1 orchestrator + 3 spokes + 1 write agent in < 60 min | Planned |
-| 4. Prove | Eval studio: CSV generator and validator, results analyser, failure triage | Generated CSVs import cleanly | Planned |
-| 5. Browser co-pilot | Portal recipes (add tool, test-pane trace capture, list provisioning) | Recipes run with consent prompts | **Started** (MCP config + tester agent) |
-| 6. GA | Hardening, docs site, accessibility, public MIT release, Open VSX | Quality bar met | Planned |
+| 1. See & Lint | Agent explorer, architecture graph, 16 rules → 25, quick fixes, Agent Plugin v1, walkthrough | Lint finds seeded issues; sample is clean | **Done** (v0.2.0) |
+| 2. Ship | pac pull/push/publish, snapshots, release evidence, MCP server v1 | End-to-end round trip in a dev environment | **Done** (v0.3.0; exit test passed twice against a dev environment with pac 2.14.1; environment profiles moved to Phase 6) |
+| 3. Build | Orchestrator blueprint wizard, instruction and HITL templates, guardrail hooks | New user builds 1 orchestrator + 3 spokes + 1 write agent in < 60 min | **Done** (v0.3.0: wizard with files-only and live `pac copilot init` modes, snippets, git hook; generated agents lint clean and push and publish in the exit test) |
+| 4. Prove | Eval studio: CSV generator and validator, results analyser, failure triage | Generated CSVs import cleanly | **Done** (v0.3.0: generator, validator against the documented import rules, analyser with six triage categories) |
+| 5. Browser co-pilot | Portal recipes (add tool, test-pane trace capture, list provisioning) | Recipes run with consent prompts | **Done** (v0.3.0: five recipes with consent gates, Run Browser Recipe command, installed as prompt files) |
+| 6. GA | Hardening, environment profiles, docs site, accessibility, public MIT release, Open VSX | Quality bar met | Planned |
 
 ## 6. Quality bar
 
@@ -67,33 +67,36 @@ Differentiators against existing Copilot Studio extensions:
 - Every rule has an id, rationale, harness applicability, docs entry and a test fixture.
 - No network calls without user action (telemetry aside, which honours VS Code settings).
 - Deny-list gate green on every commit.
+- The packaged VSIX passes the integration suite (`npm run test:integration`) in a clean VS Code.
 
-### Phase 2 exit test: dev-environment round trip (manual, maintainer only)
+### Phase 2 exit test: dev-environment round trip
 
-Run against a throwaway agent in a **dev** environment, never production. Prerequisite: a Power
-Platform CLI that lists `pull` and `push` under `pac copilot help` (2.4.1 does not; run
-`pac install latest`). Agent Forge now checks this before every lifecycle step.
+Automated as an opt-in test (`npm run test:e2e` with `AGENT_FORGE_E2E_ENV` set; see
+CONTRIBUTING.md). It uses only scratch agents:
 
-1. `pac auth select` the dev profile; `pac copilot clone` a scratch agent into an empty folder.
-2. Open the folder; confirm the agent appears and lint has no errors.
-3. **Pull** → expect "no changes" and a snapshot in extension storage.
-4. Edit one description; **Push Agent as Draft** → expect success and a draft in the portal.
-5. Change the same item in the portal, edit it locally, push → expect the "pull first" error;
-   pull, resolve, push again.
-6. **Publish Agent** (type the name) → expect success; pull again → no pending changes.
-7. Check `release-evidence.jsonl` has one entry per step with exit code 0.
+1. Check that `pac copilot help` lists `pull`, `push` and `publish` (pac 2.4.1 did not; 2.14.1 does).
+2. Create a hub and a spoke with `pac copilot init --authoring-mode cli-copilot --environment`.
+3. Apply an Agent Forge blueprint (instructions, connected-agent tool, triage skill); lint must
+   have no errors or warnings.
+4. For the spoke, then the hub: pull → push → publish → pull, all with exit code 0, using the
+   same `pac` arguments as the extension.
+5. Delete both agents (hub first; a referenced spoke cannot be deleted) and their solutions.
+
+Result (2026-10-29, pac 2.14.1, dev environment): passed twice (254 s and 322 s), no scratch
+agents or solutions left behind. Findings fixed on the way: delete order, solution cleanup, and
+`StaticSegment` instructions being read as text (INST001 never fired on real agents).
+
+Not automated: the portal-side conflict check (edit the same item in the portal and locally,
+then push, and expect "pull first"). Run it manually once per pac major version.
 
 ## 7. Next steps
 
-1. Run the Phase 2 exit test above and record the result here.
-2. Environment profiles (dev/test/prod mapping per agent folder) for Phase 2.
-3. Orchestrator blueprint wizard with instruction and HITL templates (Phase 3).
-4. Eval studio: test-set CSV generator and validator, results analyser (Phase 4).
-5. Browser recipes for portal-only steps with consent prompts (Phase 5).
-6. Publish the CLI and MCP server to npm so CI does not need a repository checkout.
-7. Parser tolerance: portal-generated Power Fx values such as `text: ="... : ..."` are invalid
+1. Environment profiles (dev/test/prod mapping per agent folder) with a production guard.
+2. Publish the CLI and MCP server to npm so CI does not need the extension folder.
+3. Parser tolerance: portal-generated Power Fx values such as `text: ="... : ..."` are invalid
    strict YAML and raise YAML001; decide whether to accept them with a dedicated info rule.
-
+4. Upgrade dev tooling majors (vitest 3+, esbuild 0.25+) to clear dev-only audit advisories.
+5. Public launch tasks in section 8: hero GIF, docs site, MIT licence, Open VSX.
 ## 8. Go-to-market (at public launch)
 
 - Listing SEO: "Copilot Studio", "multi-agent", "orchestrator", "agents", "Power Platform";
