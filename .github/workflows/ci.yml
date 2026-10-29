@@ -33,6 +33,9 @@ jobs:
       - name: Package VSIX
         if: matrix.os == 'ubuntu-latest'
         run: npx vsce package --no-dependencies --out cps-agent-forge.vsix
+      - name: Integration test of the packaged VSIX
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run -a node test-integration/run.mjs cps-agent-forge.vsix
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'ubuntu-latest'
         with:

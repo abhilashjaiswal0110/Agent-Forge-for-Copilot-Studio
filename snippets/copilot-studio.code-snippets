@@ -1,0 +1,81 @@
+{
+  "Agent Forge: confirmation protocol (HITL) segment": {
+    "prefix": [
+      "af-hitl",
+      "cps-hitl"
+    ],
+    "description": "Instruction segment: draft -> preview -> explicit yes -> execute once.",
+    "body": [
+      "- kind: StaticSegment",
+      "  value: |",
+      "    For anything that leaves this conversation (create, update, delete, send, approve):",
+      "    1. Draft the change and show a preview with every field that will be written.",
+      "    2. Ask for an explicit \"yes\" and wait for it in the next user message.",
+      "    3. Execute the change once, then report exactly what the tool confirmed.",
+      "    Never claim something was saved, sent or changed unless a tool confirmed it.$0"
+    ]
+  },
+  "Agent Forge: context envelope and waiting segment": {
+    "prefix": [
+      "af-envelope",
+      "cps-envelope"
+    ],
+    "description": "Instruction segment for orchestrators: compact context envelope and wait messages.",
+    "body": [
+      "- kind: StaticSegment",
+      "  value: |",
+      "    When you delegate, pass a context envelope: the user goal, known facts, constraints and open questions.",
+      "    Before any delegation or slow tool call, tell the user what you are doing and ask them to wait a moment.$0"
+    ]
+  },
+  "Agent Forge: connected agent tool": {
+    "prefix": [
+      "af-connected-agent",
+      "cps-connected-agent"
+    ],
+    "description": "capabilities/tools/<name>.mcs.yml for a connected (child) agent with no shared history.",
+    "body": [
+      "mcs.metadata:",
+      "  componentName: ${1:Incidents Agent}",
+      "  description: ${2:Investigates incidents. Read-only.} Use when the user ${3:reports something broken or asks about an incident}.",
+      "kind: ConnectedAgentTool",
+      "historyType:",
+      "  kind: NoHistory",
+      "botSchemaName: ${4:prefix_IncidentsAgent}",
+      "$0"
+    ]
+  },
+  "Agent Forge: MCP tool with allowlist": {
+    "prefix": [
+      "af-mcp-tool",
+      "cps-mcp-tool"
+    ],
+    "description": "MCP tool restricted to named operations, asking the user before each call.",
+    "body": [
+      "mcs.metadata:",
+      "  componentName: ${1:Ticketing MCP}",
+      "  description: ${2:Reads service desk tickets.} Use when ${3:the user asks about a ticket}.",
+      "kind: McpTool",
+      "toolPermissionMode:",
+      "  kind: ${4|AlwaysAsk,AlwaysApprove|}",
+      "allowedTools:",
+      "  - ${5:get_ticket}",
+      "$0"
+    ]
+  },
+  "Agent Forge: skill metadata": {
+    "prefix": [
+      "af-skill",
+      "cps-skill"
+    ],
+    "description": "behaviors/<folder>/skill.mcs.yml; keep the description identical to SKILL.md.",
+    "body": [
+      "mcs.metadata:",
+      "  componentName: ${1:request-triage}",
+      "  description: ${2:Classifies a request and picks the narrowest agent.} Use when ${3:a new request arrives}.",
+      "kind: InlineAgentSkill",
+      "skillFolderName: ${4:${TM_DIRECTORY/.*[\\\\/]//}}",
+      "$0"
+    ]
+  }
+}

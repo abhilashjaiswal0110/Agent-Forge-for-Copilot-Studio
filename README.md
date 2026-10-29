@@ -1,81 +1,110 @@
 # Agent Forge for Copilot Studio
 
-> Private preview. Design, lint, visualise and ship **enterprise multi-agent orchestrators** on
-> Microsoft Copilot Studio from VS Code – for both the **standard** harness and the **GitHub
-> Copilot harness** (new agent experience).
+**Design, lint, evaluate and ship multi-agent orchestrators for Microsoft Copilot Studio from VS Code.**
+Works with the **standard** harness (topics and actions) and the **GitHub Copilot** harness
+(the new agent experience: skills, tools and connected agents).
 
-Not affiliated with or endorsed by Microsoft.
+> Preview. Agent Forge is an independent tool. It is not affiliated with or endorsed by Microsoft.
 
 ## Features
 
 | Feature | What you get |
 |---|---|
-| **Agent explorer** | Every cloned agent in the workspace, its harness, and its topics, actions, skills, tools, knowledge, connections and connected agents. Click to open. |
-| **Architecture graph** | Orchestrators, connected agents and external targets on one canvas, with error and warning counts. **Copy as Mermaid** for design docs. |
-| **Policy linter** | 25 rules for routing, multi-agent depth, the single write agent, MCP allowlists, auto-approve, human-in-the-loop, hard-coded secrets, insecure URLs, waiting UX, skill drift, missing topics and formatting. Results in the Problems panel. See [docs/RULES.md](docs/RULES.md). |
-| **Quick fixes** | <kbd>Ctrl</kbd>+<kbd>.</kbd> fixes for colon-space descriptions, auto-approved writes, skill drift, missing `SKILL.md`, missing allowlists and http URLs, plus **Apply All Safe Quick Fixes** and per-rule disable. |
-| **Safe lifecycle** | Pull, push (draft) and publish through `pac copilot`, with a CLI capability check, lint gates, a confirmation step, automatic snapshots and a `release-evidence.jsonl` log. |
-| **CI and MCP** | A bundled command-line tool (`agent-forge lint`) with text, JSON and SARIF output, `--fix` and exit codes, and a read-only MCP server so any agent host can lint, inventory and diagram your agents. |
-| **Walkthrough** | **Agent Forge: Get Started** takes you from cloning to CI in six steps. |
-| **Expert skills and agents** | Clean-room skills (`cps-orchestrator-architect`, `cps-agent-review`, `cps-lifecycle`) and custom agents (`cps-architect`, `cps-browser-tester`) for Copilot Chat and other Agent Plugin hosts. |
-| **Browser co-pilot** | One command adds a Playwright MCP server limited to Copilot Studio and Power Platform hosts – isolated profile by default. |
+| **Agent explorer** | Every cloned agent in the workspace with its harness, topics, actions, skills, tools, knowledge, connections and connected agents. Click to open. |
+| **Architecture graph** | Orchestrators, connected agents and external targets on one canvas with error and warning counts. **Copy as Mermaid** for design documents. |
+| **Policy linter** | 25 rules for routing, multi-agent depth, the single write agent, MCP allowlists, auto-approve, human in the loop, hard-coded secrets, insecure URLs, waiting UX, skill drift, missing topics and formatting, in the Problems panel. |
+| **Quick fixes** | <kbd>Ctrl</kbd>+<kbd>.</kbd> fixes for seven rules, **Apply All Safe Quick Fixes**, and disable-rule on every finding. |
+| **Blueprint wizard** | Generates an orchestrator, read-only domain agents and one write agent with routing, confirmation and waiting rules, and can create them in a dev environment with `pac copilot init`. |
+| **Evaluation studio** | Drafts a test set from routing descriptions plus safety cases, validates it against the import rules, and triages exported results by failure type. |
+| **Safe lifecycle** | Pull, push (draft) and publish through `pac copilot` with a CLI capability check, lint gate, confirmation, snapshots and a release-evidence log. |
+| **Browser recipes** | Portal-only steps (add an MCP tool, capture a test trace, provision a SharePoint list, import a test set, verify a publish) run by Copilot agent mode through Playwright MCP, with consent gates. |
+| **CLI, CI and MCP** | `dist/cli.js` with SARIF output, `--fix` and exit codes, a guardrail git hook, and a read-only MCP server with eight tools. |
+| **Snippets and skills** | YAML snippets (`af-hitl`, `af-connected-agent`, `af-mcp-tool`, …), three expert skills and two custom agents for Copilot. |
 
 ## Quick start
 
 1. Install the [Power Platform CLI](https://learn.microsoft.com/power-platform/developer/cli/introduction)
-   (a release with `pac copilot pull` and `push`; run `pac install latest` if they are missing) and sign in: `pac auth create`.
-2. Clone your agents side by side into one folder (`pac copilot clone`, or the Copilot Studio extension).
-3. Open the folder in VS Code. The **Agent Forge** view appears in the activity bar.
-4. Run **Agent Forge: Show Architecture Graph** and **Agent Forge: Lint Workspace**.
+   2.14 or later (`pac install latest`) and sign in with `pac auth create`.
+2. Clone your agents side by side into one folder: `pac copilot clone --bot <id> --environment <env>`.
+   No agent yet? Run **Agent Forge: Open Contoso Sample** or **Agent Forge: New Orchestrator Blueprint**.
+3. Open the folder. The **Agent Forge** view appears in the activity bar.
+4. Run **Agent Forge: Show Architecture Graph** and **Agent Forge: Lint Workspace**, then fix
+   findings with <kbd>Ctrl</kbd>+<kbd>.</kbd>.
 5. Right-click an agent → **Pull**, **Push Agent as Draft**, **Publish Agent**.
-6. Optional: **Agent Forge: Install Copilot Studio Skills into Workspace** and
-   **Agent Forge: Configure Browser Co-pilot (Playwright MCP)**.
+6. Right-click an agent → **New Evaluation Test Set**, import it on the Copilot Studio Evaluate
+   tab, and run **Analyse Evaluation Results** on the exported CSV.
 
-Try it on the bundled fictional sample in [`samples/contoso-it-helpdesk`](samples/contoso-it-helpdesk):
-an orchestrator with two connected agents (GitHub Copilot harness) and a standard-harness agent.
+**Agent Forge: Get Started** opens a walkthrough of these steps.
 
 ## Commands
 
 | Command | Notes |
 |---|---|
-| Agent Forge: Refresh Agents | Re-scan the workspace. |
-| Agent Forge: Lint Workspace | Run all rules and open Problems. |
-| Agent Forge: Show Architecture Graph | Opens the graph webview. |
-| Agent Forge: Pull Agent | `pac copilot pull --project-dir <agent>`; checks the CLI supports it, snapshot first. Needs workspace trust. |
-| Agent Forge: Push Agent as Draft | Blocked on lint errors unless you override; snapshot first. |
-| Agent Forge: Publish Agent | `pac copilot publish --bot <id>`; type the agent name to confirm. |
-| Agent Forge: Configure Browser Co-pilot | Writes `copilot-studio-browser` into `.vscode/mcp.json`. |
-| Agent Forge: Install Copilot Studio Skills | Copies the bundled skills into `.github/skills`. |
-| Agent Forge: Apply All Safe Quick Fixes | Applies every safe fix after a confirmation; undo in each editor. |
-| Agent Forge: Disable Lint Rule… | Adds a rule id to `agentForge.lint.disabledRules` for the workspace. |
-| Agent Forge: Configure Agent Forge MCP Server | Writes the read-only `agent-forge` server into `.vscode/mcp.json` (needs Node.js). |
-| Agent Forge: Get Started | Opens the walkthrough. |
+| Refresh Agents · Lint Workspace · Show Architecture Graph | Explore and check the workspace. Work offline and in untrusted workspaces. |
+| Apply All Safe Quick Fixes · Disable Lint Rule… | Fix or silence findings. |
+| Pull Agent · Push Agent as Draft · Publish Agent | `pac copilot pull/push/publish`. Needs workspace trust; snapshot and confirmation first; push and publish are blocked on lint errors unless you override. |
+| New Orchestrator Blueprint… | Files only, or files plus live agents via `pac copilot init --environment` (trust and confirmation required). |
+| New Evaluation Test Set · Validate Evaluation CSV · Analyse Evaluation Results | Evaluation studio. Validate and analyse are also on the CSV context menu in the Explorer. |
+| Run Browser Recipe… · Configure Browser Co-pilot | Playwright MCP limited to Copilot Studio and Power Platform hosts, isolated profile by default. |
+| Configure Agent Forge MCP Server · Install Guardrail Git Hook | Use the checks from any MCP client and before every commit (needs Node.js). |
+| Install Copilot Studio Skills · Open Contoso Sample · Get Started | Skills into `.github/skills`, recipes into `.github/prompts`, the sample and the walkthrough. |
+
+## Lint rules
+
+Errors block push and publish unless you override. Disable rules with
+`agentForge.lint.disabledRules`.
+
+| Id | Severity | Harness | Rule |
+|---|---|---|---|
+| YAML001 | Error | Any | YAML parse error |
+| HARN001 | Error | Any | Mixed harness shapes |
+| MA001 | Error | Any | Nested connected agents |
+| MA002 | Info | GitHub Copilot | Connected agent not in workspace |
+| MA003 | Info | GitHub Copilot | Connected agent shares full history |
+| DESC001 | Warning | Any | Missing description |
+| DESC002 | Info | Any | Description is a label, not a trigger |
+| DESC003 | Warning | Any | Duplicate descriptions |
+| SEC001 | Warning | GitHub Copilot | MCP tool exposes all operations |
+| SEC002 | Warning | GitHub Copilot | Auto-approve without allowlist |
+| HITL001 | Warning | Any | Write capability without confirmation protocol |
+| UX001 | Info | GitHub Copilot | No waiting message guidance |
+| SKL001 | Warning | GitHub Copilot | Skill description drift |
+| DRY001 | Info | GitHub Copilot | Duplicated skill content |
+| FMT001 | Error | Any | Name too long |
+| FMT002 | Warning | Any | Colon-space in knowledge description |
+| INST001 | Warning | Any | Missing instructions |
+| INST002 | Warning | Any | Instructions too long |
+| MA004 | Info | Any | More than one write agent |
+| SEC003 | Error | Any | Hard-coded secret |
+| SEC004 | Warning | Any | Insecure http URL |
+| HITL002 | Warning | GitHub Copilot | Auto-approved write operations |
+| SKL002 | Warning | GitHub Copilot | Skill without SKILL.md |
+| TOP001 | Warning | Standard | Redirect to missing topic |
+| FMT003 | Info | Any | Description too long |
+
+Quick fixes: FMT002, SEC002, HITL002, SKL001 and SKL002 (safe, applied by *Apply All* and
+`--fix`); SEC001 and SEC004 (manual, review before saving).
 
 ## Command line and CI
 
-The VSIX bundles `dist/cli.js`; from a repository checkout run `npm ci && npm run build` first.
+The extension folder contains `dist/cli.js` (Node.js 20+):
 
 ```bash
-node dist/cli.js lint path/to/agents                          # text report, exit 1 on errors
-node dist/cli.js lint agents --format sarif --output agent-forge.sarif --fail-on warning
-node dist/cli.js lint agents --fix                            # apply safe quick fixes, then re-lint
-node dist/cli.js rules                                        # list rules
-node dist/cli.js graph agents > architecture.mmd              # Mermaid
-node dist/cli.js mcp agents                                   # read-only MCP server on stdio
+node dist/cli.js lint agents --format sarif --output agent-forge.sarif --fail-on error
+node dist/cli.js lint agents --fix
+node dist/cli.js blueprint spec.json --out agents
+node dist/cli.js eval generate agents --agent contoso_ITAssistant --output evals/testset.csv
+node dist/cli.js eval validate evals/testset.csv
+node dist/cli.js eval analyze results.csv --format markdown
+node dist/cli.js mcp agents
 ```
 
-GitHub Actions example (upload SARIF to code scanning):
+Exit codes: 0 success, 1 findings at or above `--fail-on`, 2 usage error. Upload the SARIF file
+to GitHub code scanning or Azure DevOps to see findings on pull requests.
 
-```yaml
-- run: node tools/agent-forge/dist/cli.js lint agents --format sarif --output agent-forge.sarif
-- uses: github/codeql-action/upload-sarif@v3
-  if: always()
-  with:
-    sarif_file: agent-forge.sarif
-```
-
-The MCP server exposes `list_rules`, `list_agents`, `lint` and `architecture_mermaid`. All
-four are read-only and offline.
+MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
+`architecture_mermaid`, `generate_test_set`, `validate_test_set`, `analyze_eval_results`,
+`plan_blueprint`.
 
 ## Settings
 
@@ -83,7 +112,7 @@ four are read-only and offline.
 |---|---|---|
 | `agentForge.pacPath` | `pac` | Path to the Power Platform CLI. |
 | `agentForge.lint.disabledRules` | `[]` | Rule ids to disable. |
-| `agentForge.browser.profile` | `isolated` | `isolated` (fresh in-memory browser) or `extension` (your signed-in Edge/Chrome via the Playwright extension). |
+| `agentForge.browser.profile` | `isolated` | `isolated` (fresh in-memory browser) or `extension` (your signed-in Edge or Chrome through the Playwright extension). |
 
 ## Supported layouts
 
@@ -91,29 +120,34 @@ four are read-only and offline.
   `capabilities/tools`, `capabilities/knowledge`, `infrastructure/connections`.
 - **Standard harness**: `agent.mcs.yml`, `settings.mcs.yml`, `topics/`, `actions/`,
   `knowledge/`, `variables/`, `agents/`.
-- `workflows/` (cloud flows) is valid in both.
-- Sync metadata from `.mcs/conn.json` (agent id and environment) is used for publish.
+- `workflows/` (cloud flows) in both. Sync metadata (`.mcs/conn.json`) is used for publish.
 
-## Privacy and telemetry
+## Requirements
 
-Agent Forge sends anonymous usage events (command names, counts, durations, harness types)
-only when the extension is built with a telemetry key **and** VS Code telemetry is enabled
-(`telemetry.telemetryLevel`). It never sends agent names, file paths, descriptions,
-instructions, ids or environment details. Lint and graph work fully offline.
+- VS Code 1.95 or later.
+- Power Platform CLI 2.14 or later for pull, push, publish and creating agents. The extension
+  checks the version before each step.
+- Node.js 20 or later only for the CLI, the MCP server and the git hook.
+- Copilot Chat (agent mode) for browser recipes and skills.
 
-In untrusted workspaces only the explorer, lint and graph run.
+## Privacy, security and telemetry
 
-## Development
+- Lint, graph, quick fixes, blueprints and evaluation files work offline. Nothing is uploaded.
+- Commands that run `pac`, write MCP configuration or install a git hook need workspace trust
+  and an explicit confirmation. Browser recipes ask for consent and stop before every save.
+- Hard-coded secret findings never echo the secret.
+- Anonymous usage telemetry (command names, counts, durations, harness types, rule ids) is sent
+  only when the build includes a telemetry key **and** VS Code telemetry is enabled
+  (`telemetry.telemetryLevel`). No agent names, paths, descriptions, instructions, ids or
+  environment details are ever sent.
 
-```powershell
-npm ci
-npm run typecheck; npm test; npm run build
-npm run scan      # clean-room gate, see docs/PLAN.md section 4
-npm run package   # produces the .vsix
-```
+## Known limitations
 
-Press <kbd>F5</kbd> with the sample folder open to debug. Roadmap: [docs/PLAN.md](docs/PLAN.md).
+- Portal-generated Power Fx values such as `text: ="… : …"` are invalid strict YAML and are
+  reported as YAML001.
+- Evaluation-result analysis matches column names from the Copilot Studio export; edited
+  headers may need renaming.
 
 ## License
 
-Proprietary during private preview – see [LICENSE](LICENSE).
+Proprietary preview: free to install and use; see the LICENSE file in the extension folder.

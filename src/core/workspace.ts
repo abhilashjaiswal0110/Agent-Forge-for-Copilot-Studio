@@ -43,10 +43,11 @@ function get(obj: unknown, ...path: string[]): unknown {
 
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v : undefined);
 
+/** Collects text values; `kind` discriminators (for example StaticSegment) are structure, not content. */
 function collectStrings(v: unknown, out: string[] = []): string[] {
   if (typeof v === 'string') out.push(v);
   else if (Array.isArray(v)) v.forEach((x) => collectStrings(x, out));
-  else if (v && typeof v === 'object') Object.values(v).forEach((x) => collectStrings(x, out));
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'kind') collectStrings(x, out);
   return out;
 }
 

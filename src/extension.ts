@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 import { fixesFor, lint, loadWorkspace, RULES, type AgentModel, type Finding, type WorkspaceModel } from './core';
 import { Lifecycle } from './lifecycle/lifecycle';
 import type { LifecycleStep } from './lifecycle/pacArgs';
-import { configureBrowser, configureLintServer, installSkills } from './setup/setupCommands';
+import { configureBrowser, configureLintServer, installGitHook, installSkills, runBrowserRecipe } from './setup/setupCommands';
+import { newBlueprint } from './build/blueprintWizard';
+import { EvalCommands } from './evals/evalCommands';
 import { Telemetry } from './telemetry';
 import { AgentTreeProvider, type Node } from './views/agentTree';
 import { GraphPanel } from './views/graphPanel';
@@ -20,6 +22,9 @@ export function activate(context: vscode.ExtensionContext) {
   const diagnostics = vscode.languages.createDiagnosticCollection('agentForge');
   const tree = new AgentTreeProvider();
   const lifecycle = new Lifecycle(context, output, telemetry);
+  const evalDiagnostics = vscode.languages.createDiagnosticCollection('agentForge.evals');
+  const evals = new EvalCommands(evalDiagnostics, telemetry);
+  context.subscriptions.push(evalDiagnostics);
   let model: WorkspaceModel = { agents: [], parseErrors: [] };
   let findings: Finding[] = [];
 
@@ -151,7 +156,30 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('agentForge.openWalkthrough', () => {
       telemetry.event('command.openWalkthrough');
       return vscode.commands.executeCommand('workbench.action.openWalkthrough', `${context.extension.id}#agentForge.gettingStarted`, false);
-    })
+    }),
+    vscode.commands.registerCommand('agentForge.newBlueprint', () => newBlueprint(lifecycle, telemetry)),
+    vscode.commands.registerCommand('agentForge.openSample', async () => {
+      const target = await vscode.window.showOpenDialog({ title: 'Folder to copy the Contoso sample into', canSelectFolders: true, canSelectFiles: false, openLabel: 'Copy sample here' });
+      if (!target?.[0]) return;
+      const dest = vscode.Uri.joinPath(target[0], 'contoso-it-helpdesk');
+      try {
+        await vscode.workspace.fs.stat(dest);
+        return void vscode.window.showWarningMessage(`${dest.fsPath} already exists.`);
+      } catch {
+        // Expected: the destination does not exist yet.
+      }
+      await vscode.workspace.fs.copy(vscode.Uri.joinPath(context.extensionUri, 'samples', 'contoso-it-helpdesk'), dest);
+      telemetry.event('command.openSample');
+      await vscode.commands.executeCommand('vscode.openFolder', dest, { forceNewWindow: !!vscode.workspace.workspaceFolders?.length });
+    }),
+    vscode.commands.registerCommand('agentForge.newTestSet', async (arg?: Node | vscode.Uri) => {
+      refresh();
+      return evals.newTestSet(await pickAgent(arg), model.agents);
+    }),
+    vscode.commands.registerCommand('agentForge.validateTestSet', (uri?: vscode.Uri) => evals.validate(uri)),
+    vscode.commands.registerCommand('agentForge.analyzeResults', (uri?: vscode.Uri) => evals.analyze(uri)),
+    vscode.commands.registerCommand('agentForge.runBrowserRecipe', () => runBrowserRecipe(context, telemetry)),
+    vscode.commands.registerCommand('agentForge.installGitHook', () => installGitHook(context, telemetry))
   );
 
   refresh();

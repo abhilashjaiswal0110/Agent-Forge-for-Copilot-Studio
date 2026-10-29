@@ -305,7 +305,7 @@ describe('MCP server', () => {
     expect(init?.result.serverInfo.name).toBe('agent-forge');
     expect(call('initialize', { protocolVersion: '1999-01-01' })?.result.protocolVersion).toBe('2025-06-18');
     const tools = call('tools/list')?.result.tools as typeof TOOLS;
-    expect(tools.map((t) => t.name)).toEqual(['list_rules', 'list_agents', 'lint', 'architecture_mermaid']);
+    expect(tools.map((t) => t.name)).toEqual(['list_rules', 'list_agents', 'lint', 'architecture_mermaid', 'generate_test_set', 'validate_test_set', 'analyze_eval_results', 'plan_blueprint']);
     for (const t of tools) expect(t.annotations.readOnlyHint).toBe(true);
   });
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.0 – preview
+
+- **Blueprint wizard** (*New Orchestrator Blueprint*): an orchestrator, read-only domain agents
+  and one write agent with routing, context-envelope, waiting and confirmation rules, a
+  connected-agent tool per agent and a triage skill. Creates files only, or the live agents in
+  an environment with `pac copilot init --environment`. Also `agent-forge blueprint spec.json`.
+- **Evaluation studio**: *New Evaluation Test Set* (routing and safety cases),
+  *Validate Evaluation CSV* (Copilot Studio import rules, diagnostics in Problems) and
+  *Analyse Evaluation Results* (pass rate per method, six failure categories with advice).
+  CLI `agent-forge eval generate|validate|analyze`.
+- **Browser recipes**: add an MCP tool, capture a test trace, provision a SharePoint list,
+  import a test set, verify a publish; *Run Browser Recipe* asks for consent and hands the
+  recipe to Copilot agent mode. *Install Skills* also installs them as prompt files.
+- YAML snippets (`af-hitl`, `af-envelope`, `af-connected-agent`, `af-mcp-tool`, `af-skill`),
+  *Install Guardrail Git Hook*, *Open Contoso Sample*.
+- MCP server: four new read-only tools (`generate_test_set`, `validate_test_set`,
+  `analyze_eval_results`, `plan_blueprint`).
+- Phase 2 exit test automated and passed against a dev environment (`npm run test:e2e`).
+- Integration test of the packaged VSIX in a clean VS Code (`npm run test:integration`).
+- Marketplace listing: icon, gallery banner, self-contained README, homepage and issues links,
+  free-to-use preview licence.
+- Fix: instructions stored as `StaticSegment` values (the shape `pac copilot init` writes) were
+  read with the segment kind as text, so INST001 never fired on real agents.
 ## 0.2.0 – private preview
 
 - Nine new lint rules (25 in total): INST001 missing instructions, INST002 instructions over
