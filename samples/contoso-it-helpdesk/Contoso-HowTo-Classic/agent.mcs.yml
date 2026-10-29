@@ -1,0 +1,4 @@
+mcs.metadata:
+  componentName: Contoso How-To Assistant
+kind: GptComponentMetadata
+instructions: Answer how-to questions from the knowledge base. You never change anything.

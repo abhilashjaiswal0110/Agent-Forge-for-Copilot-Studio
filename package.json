@@ -1,0 +1,204 @@
+{
+  "name": "cps-agent-forge",
+  "displayName": "Agent Forge for Copilot Studio",
+  "description": "Design, lint, visualise and ship enterprise multi-agent orchestrators on Microsoft Copilot Studio - standard and GitHub Copilot (new agent experience) harnesses.",
+  "version": "0.1.0",
+  "preview": true,
+  "private": true,
+  "publisher": "abhilashjaiswal0110",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension.git"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Linters",
+    "Visualization"
+  ],
+  "keywords": [
+    "copilot studio",
+    "multi-agent",
+    "orchestrator",
+    "agents",
+    "power platform",
+    "connected agents",
+    "mcp",
+    "yaml"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/settings.mcs.yml",
+    "workspaceContains:**/agent.mcs.yml"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In untrusted workspaces Agent Forge only analyses files (explorer, lint, graph). Lifecycle commands that run the Power Platform CLI require trust."
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentForge.refresh",
+        "title": "Refresh Agents",
+        "category": "Agent Forge",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "agentForge.lint",
+        "title": "Lint Workspace",
+        "category": "Agent Forge"
+      },
+      {
+        "command": "agentForge.showGraph",
+        "title": "Show Architecture Graph",
+        "category": "Agent Forge",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "agentForge.pull",
+        "title": "Pull Agent (pac copilot pull)",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.push",
+        "title": "Push Agent as Draft (pac copilot push)",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.publish",
+        "title": "Publish Agent (pac copilot publish)",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.configureBrowser",
+        "title": "Configure Browser Co-pilot (Playwright MCP)",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "agentForge.installSkills",
+        "title": "Install Copilot Studio Skills into Workspace",
+        "category": "Agent Forge",
+        "enablement": "isWorkspaceTrusted"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentForge",
+          "title": "Agent Forge",
+          "icon": "$(hubot)"
+        }
+      ]
+    },
+    "views": {
+      "agentForge": [
+        {
+          "id": "agentForge.agents",
+          "name": "Agents"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "agentForge.agents",
+        "contents": "No Copilot Studio agent found in this workspace.\nClone one with the Power Platform CLI (pac copilot clone) or the Copilot Studio extension, then refresh.\n[Refresh](command:agentForge.refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "agentForge.refresh",
+          "when": "view == agentForge.agents",
+          "group": "navigation"
+        },
+        {
+          "command": "agentForge.showGraph",
+          "when": "view == agentForge.agents",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "agentForge.pull",
+          "when": "view == agentForge.agents && viewItem == agent",
+          "group": "lifecycle@1"
+        },
+        {
+          "command": "agentForge.push",
+          "when": "view == agentForge.agents && viewItem == agent",
+          "group": "lifecycle@2"
+        },
+        {
+          "command": "agentForge.publish",
+          "when": "view == agentForge.agents && viewItem == agent",
+          "group": "lifecycle@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Agent Forge",
+      "properties": {
+        "agentForge.pacPath": {
+          "type": "string",
+          "default": "pac",
+          "description": "Path to the Power Platform CLI executable."
+        },
+        "agentForge.lint.disabledRules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Rule IDs to disable, for example [\"DESC002\"]."
+        },
+        "agentForge.browser.profile": {
+          "type": "string",
+          "enum": [
+            "isolated",
+            "extension"
+          ],
+          "default": "isolated",
+          "enumDescriptions": [
+            "Playwright MCP uses an isolated, in-memory browser profile (recommended).",
+            "Playwright MCP attaches to your signed-in Edge/Chrome via the Playwright browser extension."
+          ],
+          "description": "Browser profile used by the browser co-pilot (Playwright MCP)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "scan": "node scripts/denylist-scan.mjs",
+    "package": "vsce package --no-dependencies",
+    "vscode:prepublish": "node esbuild.mjs --production"
+  },
+  "dependencies": {
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

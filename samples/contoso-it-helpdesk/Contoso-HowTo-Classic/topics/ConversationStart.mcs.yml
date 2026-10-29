@@ -1,0 +1,8 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnConversationStart
+  id: main
+  actions:
+    - kind: SendActivity
+      id: greet
+      activity: Hi, I can help with Contoso how-to questions.

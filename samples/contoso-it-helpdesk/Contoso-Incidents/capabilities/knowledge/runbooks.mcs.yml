@@ -1,0 +1,7 @@
+mcs.metadata:
+  componentName: IT runbooks
+  description: Contoso troubleshooting runbooks and known-error articles
+kind: KnowledgeSourceConfiguration
+source:
+  kind: SharePointKnowledgeSource
+  siteUrl: https://contoso.sharepoint.com/sites/itrunbooks

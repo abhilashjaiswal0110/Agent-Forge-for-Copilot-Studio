@@ -1,0 +1,7 @@
+mcs.metadata:
+  componentName: Incidents Agent
+  description: Investigates incidents and outages. Use when the user reports something broken, asks about an incident status, or wants troubleshooting steps. Read-only - never changes tickets.
+kind: ConnectedAgentTool
+historyType:
+  kind: NoHistory
+botSchemaName: contoso_incidentsAgent

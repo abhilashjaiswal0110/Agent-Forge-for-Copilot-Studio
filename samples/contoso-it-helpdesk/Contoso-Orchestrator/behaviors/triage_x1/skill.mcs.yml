@@ -1,0 +1,6 @@
+mcs.metadata:
+  componentName: request-triage
+  description: Classifies an IT request into incident, how-to, access or change. Use when a new request arrives before delegating.
+  schemaName: contoso_itOrchestrator.skill.triage
+kind: InlineAgentSkill
+skillFolderName: triage_x1

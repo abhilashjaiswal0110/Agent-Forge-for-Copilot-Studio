@@ -1,0 +1,7 @@
+displayName: Contoso How-To Assistant
+schemaName: contoso_howTo
+configuration:
+  settings:
+    GenerativeActionsEnabled: true
+  recognizer:
+    kind: GenerativeAIRecognizer

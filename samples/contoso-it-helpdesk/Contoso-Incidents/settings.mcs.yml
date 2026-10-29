@@ -1,0 +1,12 @@
+displayName: Contoso Incidents Agent
+schemaName: contoso_incidentsAgent
+configuration:
+  recognizer:
+    kind: CLICopilotRecognizer
+  agentSettings:
+    instructions:
+      segments:
+        - text: |
+            You investigate incidents for the orchestrator. Reply with DOMAIN REVIEW (findings with
+            evidence) or EVIDENCE NEEDED (what is missing). You are read-only.
+            Tell the user to wait a moment before searching.

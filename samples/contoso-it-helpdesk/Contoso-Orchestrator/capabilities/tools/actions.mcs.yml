@@ -1,0 +1,7 @@
+mcs.metadata:
+  componentName: Actions Agent
+  description: Executes approved changes such as creating or updating tickets and sending notifications. Use only after the user gave an explicit yes to a previewed draft.
+kind: ConnectedAgentTool
+historyType:
+  kind: NoHistory
+botSchemaName: contoso_actionsAgent

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "copilot-studio-browser": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser",
+        "msedge",
+        "--allowed-origins",
+        "https://copilotstudio.microsoft.com;https://*.powerva.microsoft.com;https://make.powerapps.com;https://make.powerautomate.com;https://admin.powerplatform.microsoft.com;https://login.microsoftonline.com",
+        "--isolated"
+      ]
+    }
+  }
+}

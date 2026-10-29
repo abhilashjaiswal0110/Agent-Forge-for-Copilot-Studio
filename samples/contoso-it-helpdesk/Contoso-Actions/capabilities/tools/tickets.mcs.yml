@@ -1,0 +1,9 @@
+mcs.metadata:
+  componentName: Ticketing MCP
+  description: Creates and updates service desk tickets. Use when executing an approved ticket change.
+kind: McpTool
+toolPermissionMode:
+  kind: AlwaysAsk
+allowedTools:
+  - create_ticket
+  - update_ticket

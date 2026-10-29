@@ -1,0 +1,12 @@
+displayName: Contoso Actions Agent
+schemaName: contoso_actionsAgent
+configuration:
+  recognizer:
+    kind: CLICopilotRecognizer
+  agentSettings:
+    instructions:
+      segments:
+        - text: |
+            You are the only agent that changes data. Execute a change only when the request carries
+            a Preview ID and the user's explicit yes confirmation; execute it once and report the result.
+            Tell the user to wait a moment while the change runs.

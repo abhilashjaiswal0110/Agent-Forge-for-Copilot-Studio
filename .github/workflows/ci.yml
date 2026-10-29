@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Clean-room leak gate
+        run: npm run scan
+        env:
+          DENYLIST_PATTERNS: ${{ secrets.DENYLIST_PATTERNS }}
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Package VSIX
+        if: matrix.os == 'ubuntu-latest'
+        run: npx vsce package --no-dependencies --out cps-agent-forge.vsix
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: vsix
+          path: cps-agent-forge.vsix
