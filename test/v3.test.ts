@@ -86,6 +86,7 @@ describe('orchestrator blueprint', () => {
     expect(validateSpec({ ...SPEC, spokes: [] })).toEqual([expect.stringMatching(/at least one domain agent/)]);
     expect(validateSpec({ ...SPEC, spokes: [SPEC.spokes[0], { ...SPEC.spokes[0] }] })).toEqual([expect.stringMatching(/unique/)]);
     expect(validateSpec({ ...SPEC, writer: { ...SPEC.writer!, operations: [] } })).toEqual([expect.stringMatching(/operations/)]);
+    expect(validateSpec({ ...SPEC, spokes: [{ name: '!!!', purpose: 'Only symbols in the name here' }] })).toEqual([expect.stringMatching(/letter or digit/)]);
     expect(schemaFor('contoso', 'Contoso Scaffold Probe')).toBe('contoso_ContosoScaffoldProbe');
   });
 

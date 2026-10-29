@@ -44,6 +44,7 @@ export function validateSpec(spec: BlueprintSpec): string[] {
   const all = [spec.orchestrator, ...spec.spokes, ...(spec.writer ? [spec.writer] : [])];
   for (const a of all) {
     if (!a.name?.trim()) errors.push('Every agent needs a name.');
+    else if (!/[A-Za-z0-9]/.test(a.name)) errors.push(`"${a.name}" needs at least one letter or digit.`);
     else if (a.name.length > 60) errors.push(`"${a.name}" is longer than 60 characters.`);
     if (!a.purpose?.trim() || a.purpose.trim().length < 15) errors.push(`Describe what "${a.name || '(unnamed)'}" does in at least 15 characters.`);
   }

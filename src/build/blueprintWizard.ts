@@ -16,7 +16,7 @@ async function ask(prompt: string, value = '', validate?: (v: string) => string 
 const purposeCheck = (v: string) => (v.trim().length < 15 ? 'Describe what it does in at least 15 characters.' : undefined);
 
 async function askAgent(kind: string, defaults: BlueprintAgent): Promise<BlueprintAgent | undefined> {
-  const name = await ask(`${kind} name`, defaults.name, (v) => (v.trim() ? (v.length > 60 ? 'Keep it under 60 characters.' : undefined) : 'Enter a name.'));
+  const name = await ask(`${kind} name`, defaults.name, (v) => (!/[A-Za-z0-9]/.test(v) ? 'Use at least one letter or digit.' : v.length > 60 ? 'Keep it under 60 characters.' : undefined));
   if (!name) return undefined;
   const purpose = await ask(`What does "${name}" do? This becomes its instructions and routing description.`, defaults.purpose, purposeCheck);
   return purpose ? { name, purpose } : undefined;
