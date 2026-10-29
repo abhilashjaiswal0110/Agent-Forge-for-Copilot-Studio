@@ -50,6 +50,8 @@ export interface AgentModel {
   root: string;
   harness: Harness;
   harnessEvidence: string[];
+  /** False for standard agents on classic (non-generative) orchestration, where instructions are not used. */
+  generative: boolean;
   settingsFile?: string;
   agentFile?: string;
   instructions: string;

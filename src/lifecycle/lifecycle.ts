@@ -92,6 +92,8 @@ export class Lifecycle {
       return false;
     }
     if (!pacSupports(step, help)) {
+      // Do not keep a stale answer: the user is about to update pac and retry.
+      this.helpCache.delete(pac);
       const copy = 'Copy update command';
       const choice = await vscode.window.showErrorMessage(
         `Agent Forge: your Power Platform CLI (${pacVersion(help) ?? 'unknown version'}) has no "pac copilot ${step}". Update it with "pac install latest" (or your package manager), then try again.`,

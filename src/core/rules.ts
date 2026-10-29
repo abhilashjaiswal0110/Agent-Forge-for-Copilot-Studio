@@ -201,7 +201,7 @@ function lintAgent(agent: AgentModel, all: AgentModel[], out: Collector) {
   }
 
   if (!agent.instructions.trim()) {
-    if (agent.harness !== 'unknown') out.add('INST001', `Agent "${agent.name}" has no instructions.`, anchor, lineOf(anchor, /instructions:/), agent.name);
+    if (agent.harness !== 'unknown' && agent.generative) out.add('INST001', `Agent "${agent.name}" has no instructions.`, anchor, lineOf(anchor, /instructions:/), agent.name);
   } else if (agent.instructions.length > MAX_INSTRUCTIONS) {
     const file = agent.harness === 'standard' && agent.agentFile ? agent.agentFile : anchor;
     out.add('INST002', `Instructions of "${agent.name}" are ${agent.instructions.length} characters (max ${MAX_INSTRUCTIONS}).`, file, lineOf(file, /instructions:/), agent.name);

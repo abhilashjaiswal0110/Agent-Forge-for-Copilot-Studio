@@ -81,6 +81,8 @@ describe('new rules: failing and passing fixtures', () => {
   it('INST001 missing instructions', () => {
     expect(ids(fixture({ 'A/settings.mcs.yml': settings('A', 'x_a', null) }))).toContain('INST001');
     expect(ids(fixture({ 'A/settings.mcs.yml': settings('A', 'x_a') }))).not.toContain('INST001');
+    const classic = { 'C/settings.mcs.yml': 'displayName: Classic\nschemaName: x_c\n', 'C/agent.mcs.yml': 'kind: GptComponentMetadata\n' };
+    expect(ids(fixture(classic))).not.toContain('INST001');
   });
 
   it('INST002 instructions over 8,000 characters', () => {
@@ -169,13 +171,14 @@ describe('quick fixes', () => {
     return root;
   };
 
-  it('FMT002 replaces colon-space and keeps CRLF line endings', () => {
+  it('FMT002 replaces colon-space and keeps CRLF line endings and the BOM', () => {
     const root = fixture({
       'A/settings.mcs.yml': settings('A', 'x_a'),
-      'A/capabilities/knowledge/k.mcs.yml': 'mcs.metadata:\r\n  componentName: K\r\n  description: "Policies: HR"\r\nkind: KnowledgeSourceConfiguration\r\n'
+      'A/capabilities/knowledge/k.mcs.yml': '\uFEFFmcs.metadata:\r\n  componentName: K\r\n  description: "Policies: HR"\r\nkind: KnowledgeSourceConfiguration\r\n'
     });
     fixAll(root, 'FMT002');
     const text = readFileSync(join(root, 'A/capabilities/knowledge/k.mcs.yml'), 'utf8');
+    expect(text.startsWith('\uFEFFmcs.metadata:')).toBe(true);
     expect(text).toContain('description: "Policies - HR"\r\n');
     expect(ids(root)).not.toContain('FMT002');
   });
@@ -215,6 +218,16 @@ describe('quick fixes', () => {
       'A/behaviors/e/SKILL.md': '---\nname: evidence\ndescription: Old text\n---\nBody\n'
     });
     expect(ids(root)).toContain('SKL001');
+    fixAll(root, 'SKL001');
+    expect(ids(root)).not.toContain('SKL001');
+  });
+
+  it('SKL001 fix round-trips descriptions with quotes and backslashes', () => {
+    const root = fixture({
+      'A/settings.mcs.yml': settings('A', 'x_a'),
+      'A/behaviors/e/skill.mcs.yml': skillMeta(`'Finds the "owner": C:\\share paths. Use when a path owner is needed.'`),
+      'A/behaviors/e/SKILL.md': '---\nname: evidence\ndescription: Old text\n---\nBody\n'
+    });
     fixAll(root, 'SKL001');
     expect(ids(root)).not.toContain('SKL001');
   });

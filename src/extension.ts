@@ -116,6 +116,11 @@ export function activate(context: vscode.ExtensionContext) {
       const fixes = findings.flatMap((f) => fixesFor(f, model)).filter((f) => f.safe);
       if (!fixes.length) return void vscode.window.showInformationMessage('Agent Forge: no safe quick fixes available.');
       const files = new Set(fixes.flatMap((f) => [...f.edits.map((e) => e.file), ...f.creates.map((c) => c.file)]));
+      const touched = [...files].map((f) => vscode.Uri.file(f).toString());
+      // Fix positions come from disk, so unsaved buffers would be edited at the wrong place.
+      if (vscode.workspace.textDocuments.some((d) => d.isDirty && touched.includes(d.uri.toString()))) {
+        return void vscode.window.showWarningMessage('Agent Forge: save the affected agent files before applying quick fixes.');
+      }
       const apply = 'Apply';
       const answer = await vscode.window.showWarningMessage(
         `Apply ${fixes.length} safe quick fix(es) to ${files.size} file(s)? You can undo them in each editor.`,
@@ -125,7 +130,6 @@ export function activate(context: vscode.ExtensionContext) {
       if (answer !== apply) return;
       const ok = await vscode.workspace.applyEdit(toWorkspaceEdit(fixes));
       if (ok) {
-        const touched = [...files].map((f) => vscode.Uri.file(f).toString());
         for (const doc of vscode.workspace.textDocuments) if (doc.isDirty && touched.includes(doc.uri.toString())) await doc.save();
       }
       const byRule: Record<string, number> = {};

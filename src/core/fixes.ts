@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { readText } from './workspace';
 import type { Component, Finding, WorkspaceModel } from './model';
@@ -110,7 +110,9 @@ export function applyFixes(fixes: QuickFix[]): string[] {
   const changed: string[] = [];
 
   for (const [file, edits] of byFile) {
-    const raw = readText(file);
+    const original = readFileSync(file, 'utf8');
+    const bom = original.startsWith('\uFEFF') ? '\uFEFF' : '';
+    const raw = original.slice(bom.length);
     const eol = raw.includes('\r\n') ? '\r\n' : '\n';
     const src = raw.split(/\r?\n/);
     const seen = new Set<string>();
@@ -128,7 +130,7 @@ export function applyFixes(fixes: QuickFix[]): string[] {
       const replaced = l.slice(0, e.startCol) + e.text + l.slice(e.endCol);
       src.splice(e.line, 1, ...replaced.split('\n'));
     }
-    writeFileSync(file, src.join(eol));
+    writeFileSync(file, bom + src.join(eol));
     changed.push(file);
   }
   for (const f of fixes) {

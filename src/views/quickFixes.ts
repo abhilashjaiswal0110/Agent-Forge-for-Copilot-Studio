@@ -37,7 +37,7 @@ export class AgentForgeCodeActions implements vscode.CodeActionProvider {
       const finding = findings.find(
         (f) => f.ruleId === ruleId && f.line === d.range.start.line && f.message === d.message && samePath(f.file, document.uri.fsPath)
       );
-      if (finding) {
+      if (finding && !document.isDirty) {
         for (const fix of fixesFor(finding, model)) {
           const action = new vscode.CodeAction(`${fix.title} (${ruleId})`, vscode.CodeActionKind.QuickFix);
           action.edit = toWorkspaceEdit([fix]);

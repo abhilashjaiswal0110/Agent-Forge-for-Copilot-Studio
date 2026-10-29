@@ -24,7 +24,7 @@ Errors block **Push** and **Publish** unless you explicitly override.
 | DRY001 | Info | GitHub Copilot | Duplicated skill content | The same skill copied into many agents drifts. Keep one canonical source. |
 | FMT001 | Error | Any | Name too long | Component and schema names are limited to 100 characters. |
 | FMT002 | Warning | Any | Colon-space in knowledge description | Knowledge descriptions containing `: ` are a known source of sync and rendering problems. |
-| INST001 | Warning | Any | Missing instructions | Without instructions the agent has no role, scope or rules; routing and tone fall back to defaults. |
+| INST001 | Warning | Any | Missing instructions | Without instructions the agent has no role, scope or rules; routing and tone fall back to defaults. Standard agents on classic orchestration are exempt. |
 | INST002 | Warning | Any | Instructions too long | Instructions are capped at 8,000 characters. Move procedures into skills, topics or knowledge; keep role, scope and hard rules. |
 | MA004 | Info | Any | More than one write agent | Keep a single connected agent that changes data so confirmations, audit and permissions live in one place. |
 | SEC003 | Error | Any | Hard-coded secret | Keys, passwords, bearer tokens, SAS signatures and private keys in agent files leak through source control and solution exports. The secret is never echoed in the finding. |

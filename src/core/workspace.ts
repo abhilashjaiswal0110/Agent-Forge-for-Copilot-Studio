@@ -129,13 +129,26 @@ function readSync(root: string): SyncMetadata {
   }
 }
 
+/** Reads a single-line YAML scalar: double-quoted (JSON-compatible escapes), single-quoted ('' escape) or plain. */
+export function unquote(v: string): string {
+  if (v.length >= 2 && v.startsWith('"') && v.endsWith('"')) {
+    try {
+      return String(JSON.parse(v));
+    } catch {
+      return v.slice(1, -1);
+    }
+  }
+  if (v.length >= 2 && v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1).replace(/''/g, "'");
+  return v;
+}
+
 function parseFrontMatter(text: string): Record<string, string> {
   const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
   if (!m) return {};
   const out: Record<string, string> = {};
   for (const line of m[1].split(/\r?\n/)) {
     const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
-    if (kv) out[kv[1]] = kv[2].replace(/^["']|["']$/g, '').trim();
+    if (kv) out[kv[1]] = unquote(kv[2].trim());
   }
   return out;
 }
@@ -258,12 +271,18 @@ export function parseAgent(root: string, errors: ParseError[]): AgentModel {
   const { harness, evidence } = detectHarness(root, settings, agentYaml);
 
   const instructionSource = get(settings, 'configuration', 'agentSettings', 'instructions') ?? get(agentYaml, 'instructions');
+  const recognizer = str(get(settings, 'configuration', 'recognizer', 'kind'));
+  const generative =
+    harness !== 'standard' ||
+    recognizer === 'GenerativeAIRecognizer' ||
+    get(settings, 'configuration', 'settings', 'GenerativeActionsEnabled') === true;
   return {
     name: str(get(settings, 'displayName')) ?? str(get(agentYaml, 'mcs.metadata', 'componentName')) ?? basename(root),
     schemaName: str(get(settings, 'schemaName')),
     root,
     harness,
     harnessEvidence: evidence,
+    generative,
     settingsFile,
     agentFile,
     instructions: collectStrings(instructionSource).join('\n'),
