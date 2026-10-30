@@ -131,7 +131,7 @@ describe('environment profiles', () => {
     expect(guardDecision(prod, 'off', true).action).toBe('allow');
     expect(guardDecision(dev, 'block', true).action).toBe('allow');
     expect(guardDecision(unknown, 'confirm', false).action).toBe('allow');
-    expect(guardDecision(unknown, 'confirm', true)).toMatchObject({ action: 'block', reason: expect.stringMatching(/fabrikam.crm.dynamics.com/) });
+    expect(guardDecision(unknown, 'confirm', true)).toMatchObject({ action: 'block', reason: expect.stringContaining('(fabrikam.crm.dynamics.com)') });
     expect(guardDecision(unsynced, 'confirm', true)).toMatchObject({ action: 'block', reason: expect.stringMatching(/no sync metadata/) });
   });
 

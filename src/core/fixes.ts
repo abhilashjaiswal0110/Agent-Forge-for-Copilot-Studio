@@ -135,9 +135,13 @@ export function applyFixes(fixes: QuickFix[]): string[] {
   }
   for (const f of fixes) {
     for (const c of f.creates) {
-      if (existsSync(c.file)) continue;
-      writeFileSync(c.file, c.content);
-      changed.push(c.file);
+      // 'wx' creates atomically and fails if the file appeared meanwhile; never overwrite.
+      try {
+        writeFileSync(c.file, c.content, { flag: 'wx' });
+        changed.push(c.file);
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+      }
     }
   }
   return changed;

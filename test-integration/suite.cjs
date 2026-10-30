@@ -52,8 +52,13 @@ const tests = {
     const uri = vscode.Uri.file(file);
     const diag = await waitFor(() => vscode.languages.getDiagnostics(uri).find((d) => d.code === 'FMT002'), 'FMT002 diagnostic');
     const doc = await vscode.workspace.openTextDocument(uri);
-    const actions = await vscode.commands.executeCommand('vscode.executeCodeActionProvider', uri, diag.range, vscode.CodeActionKind.QuickFix.value);
-    const fix = actions.find((a) => a.title.includes('Replace ": "'));
+    // Wait for the provider's actions: a watcher-triggered refresh may be replacing diagnostics.
+    let actions = [];
+    const fix = await waitFor(async () => {
+      const current = vscode.languages.getDiagnostics(uri).find((d) => d.code === 'FMT002') ?? diag;
+      actions = (await vscode.commands.executeCommand('vscode.executeCodeActionProvider', uri, current.range, vscode.CodeActionKind.QuickFix.value)) ?? [];
+      return actions.find((a) => a.title.includes('Replace ": "'));
+    }, 'FMT002 quick fix').catch(() => undefined);
     assert.ok(fix, `quick fix offered (got: ${actions.map((a) => a.title).join(' | ')})`);
     assert.ok(actions.some((a) => a.title.startsWith('Disable rule FMT002')), 'disable action offered');
     assert.ok(await vscode.workspace.applyEdit(fix.edit));

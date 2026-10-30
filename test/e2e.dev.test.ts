@@ -20,9 +20,12 @@ const ENV = process.env.AGENT_FORGE_E2E_ENV;
 const PAC = process.env.AGENT_FORGE_PAC ?? 'pac';
 const KEEP = process.env.AGENT_FORGE_E2E_KEEP === '1';
 
+/** Quotes one argument for cmd.exe + the MSVC argv parser (backslashes before a quote are doubled). */
+const winQuote = (a: string) => (/[\s"]/.test(a) ? `"${a.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"` : a);
+
 function pac(args: string[], cwd?: string) {
   const windows = process.platform === 'win32';
-  const quoted = windows ? args.map((a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)) : args;
+  const quoted = windows ? args.map(winQuote) : args;
   const r = spawnSync(PAC, quoted, { cwd, encoding: 'utf8', shell: windows, timeout: 600_000 });
   return { code: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
 }
