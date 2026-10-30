@@ -15,14 +15,19 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Clean-room leak gate
-        run: npm run scan
+      - name: Clean-room leak gate (working tree and full published history)
+        run: |
+          npm run scan
+          npm run scan:history
         env:
           DENYLIST_PATTERNS: ${{ secrets.DENYLIST_PATTERNS }}
       - run: npm run typecheck
@@ -36,8 +41,17 @@ jobs:
       - name: Integration test of the packaged VSIX
         if: matrix.os == 'ubuntu-latest'
         run: xvfb-run -a node test-integration/run.mjs cps-agent-forge.vsix
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.os == 'ubuntu-latest'
         with:
           name: vsix
           path: cps-agent-forge.vsix
+
+  dependency-review:
+    # Needs the dependency graph, which is free for public repositories.
+    if: github.event_name == 'pull_request' && github.event.repository.visibility == 'public'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate

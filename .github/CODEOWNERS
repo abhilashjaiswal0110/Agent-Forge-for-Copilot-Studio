@@ -1,0 +1,10 @@
+# Every change needs the maintainer's review; release automation and supply chain files are listed
+# explicitly so the rule survives if broader ownership is added later.
+*                         @abhilashjaiswal0110
+/.github/                 @abhilashjaiswal0110
+/package.json             @abhilashjaiswal0110
+/package-lock.json        @abhilashjaiswal0110
+/esbuild.mjs              @abhilashjaiswal0110
+/.vscodeignore            @abhilashjaiswal0110
+/scripts/                 @abhilashjaiswal0110
+/plugin/                  @abhilashjaiswal0110

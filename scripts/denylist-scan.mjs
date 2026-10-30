@@ -35,24 +35,52 @@ function loadPrivatePatterns() {
     .map((p, i) => ({ id: `PRIVATE_${i + 1}`, re: new RegExp(p, 'gi'), allow: () => false }));
 }
 
-const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { encoding: 'utf8' })
-  .split(/\r?\n/)
-  .filter((f) => f && !SKIP.some((r) => r.test(f)) && existsSync(f));
-
+const history = process.argv.includes('--history');
 const privatePatterns = loadPrivatePatterns();
 const rules = [...builtIn, ...privatePatterns];
 const findings = [];
 
-for (const file of files) {
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/);
-  lines.forEach((line, idx) => {
+function scanText(label, text) {
+  text.split(/\r?\n/).forEach((line, idx) => {
     for (const rule of rules) {
       rule.re.lastIndex = 0;
       for (const m of line.matchAll(rule.re)) {
-        if (!rule.allow(m[0])) findings.push(`${file}:${idx + 1} [${rule.id}]`);
+        if (!rule.allow(m[0])) findings.push(`${label}:${idx + 1} [${rule.id}]`);
       }
     }
   });
+}
+
+let scanned = 0;
+if (history) {
+  // Every file version and commit message reachable from a branch or tag: what a public repo exposes.
+  // Local-only refs (for example editor or agent checkpoints under refs/agents) are never pushed.
+  // HEAD covers the detached merge commit that CI checks out for pull requests, including forks.
+  const PUBLISHED = ['--branches', '--remotes', '--tags', 'HEAD'];
+  const git = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 30 });
+  const blobs = new Map();
+  for (const line of git(['rev-list', ...PUBLISHED, '--objects']).split(/\r?\n/)) {
+    const [sha, ...rest] = line.split(' ');
+    const path = rest.join(' ');
+    if (sha && path && !blobs.has(sha)) blobs.set(sha, path);
+  }
+  for (const [sha, path] of blobs) {
+    if (SKIP.some((r) => r.test(path)) || git(['cat-file', '-t', sha]).trim() !== 'blob') continue;
+    const buf = execFileSync('git', ['cat-file', 'blob', sha], { maxBuffer: 1 << 30 });
+    if (buf.includes(0)) continue; // binary
+    scanText(`${path}@${sha.slice(0, 8)}`, buf.toString('utf8'));
+    scanned++;
+  }
+  for (const c of git(['rev-list', ...PUBLISHED]).split(/\r?\n/).filter(Boolean)) {
+    scanText(`commit ${c.slice(0, 8)} message`, git(['log', '-1', '--format=%B', c]));
+    scanned++;
+  }
+} else {
+  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard'], { encoding: 'utf8' })
+    .split(/\r?\n/)
+    .filter((f) => f && !SKIP.some((r) => r.test(f)) && existsSync(f));
+  for (const file of files) scanText(file, readFileSync(file, 'utf8'));
+  scanned = files.length;
 }
 
 if (privatePatterns.length === 0) {
@@ -63,4 +91,4 @@ if (findings.length) {
   console.error(`denylist-scan: ${findings.length} finding(s):\n${[...new Set(findings)].join('\n')}`);
   process.exit(1);
 }
-console.log(`denylist-scan: ${files.length} files clean (${rules.length} rules).`);
+console.log(`denylist-scan: ${scanned} ${history ? 'blobs and commit messages in history' : 'files'} clean (${rules.length} rules).`);
