@@ -156,4 +156,6 @@ MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
 
 ## License
 
-Proprietary preview: free to install and use; see the LICENSE file in the extension folder.
+[MIT](https://github.com/abhilashjaiswal0110/Copilotstudio-extension/blob/main/LICENSE). Source, issues and security reports:
+[github.com/abhilashjaiswal0110/Copilotstudio-extension](https://github.com/abhilashjaiswal0110/Copilotstudio-extension)
+(see SECURITY.md for private vulnerability reporting).
