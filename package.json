@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension.git"
+    "url": "https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio.git"
   },
   "engines": {
     "vscode": "^1.95.0"
@@ -506,9 +506,9 @@
     "color": "#1E1B4B",
     "theme": "dark"
   },
-  "homepage": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension#readme",
+  "homepage": "https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio#readme",
   "bugs": {
-    "url": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension/issues"
+    "url": "https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio/issues"
   },
   "qna": false,
   "pricing": "Free"

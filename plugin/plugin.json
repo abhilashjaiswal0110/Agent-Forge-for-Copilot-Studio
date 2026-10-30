@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Skills, agents and a browser co-pilot for designing, reviewing and shipping multi-agent orchestrators on Microsoft Copilot Studio (standard and GitHub Copilot harnesses).",
   "author": { "name": "Abhilash Jaiswal" },
-  "homepage": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension",
+  "homepage": "https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio",
   "keywords": ["copilot-studio", "multi-agent", "orchestrator", "power-platform", "playwright"],
   "skills": "./skills",
   "agents": "./agents",

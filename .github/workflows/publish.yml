@@ -1,7 +1,7 @@
 name: Publish
 
 # Publishes to the Visual Studio Marketplace with Trusted Publishing (OIDC); no PAT is stored.
-# Marketplace policy: owner abhilashjaiswal0110, repository Copilotstudio-extension,
+# Marketplace policy: owner abhilashjaiswal0110, repository Agent-Forge-for-Copilot-Studio,
 # workflow publish.yml, environment marketplace (deployments limited to v* tags).
 # Release: bump "version" in package.json, update CHANGELOG.md, merge, then push tag v<version>.
 
