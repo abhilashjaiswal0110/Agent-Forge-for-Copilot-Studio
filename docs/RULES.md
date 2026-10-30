@@ -65,3 +65,8 @@ apply only the *safe* fixes.
   followed by a literal of 12+ characters with letters and digits, or a bearer token, SAS
   `sig=`, `AccountKey=` or PEM private key. Power Fx (`=Env.X`), `${VAR}` and `{...}` references
   are ignored.
+- **Power Fx values** (YAML001): the portal writes formulas as plain scalars, for example
+  `activity: ="Hi: " & User.DisplayName`. Strict YAML rejects the `: ` inside them. When a file
+  fails to parse, Agent Forge re-reads it with such `=` values (and their continuation lines)
+  quoted, line for line. YAML001 is reported only if the file still does not parse, at the line
+  of the remaining error.

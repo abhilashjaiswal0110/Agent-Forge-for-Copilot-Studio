@@ -8,3 +8,7 @@ Right-click an agent in the **Agent Forge** view:
 
 Every step checks that your Power Platform CLI supports it, takes a snapshot first and
 appends to `release-evidence.jsonl`. Lifecycle commands need a trusted workspace.
+
+**Environment profiles.** Run **Add Environment Profile** on an agent to mark its environment as
+dev, test or prod. Production steps then ask you to type the profile name, or are blocked with
+`agentForge.productionGuard` set to `block`.

@@ -17,6 +17,7 @@ Works with the **standard** harness (topics and actions) and the **GitHub Copilo
 | **Blueprint wizard** | Generates an orchestrator, read-only domain agents and one write agent with routing, confirmation and waiting rules, and can create them in a dev environment with `pac copilot init`. |
 | **Evaluation studio** | Drafts a test set from routing descriptions plus safety cases, validates it against the import rules, and triages exported results by failure type. |
 | **Safe lifecycle** | Pull, push (draft) and publish through `pac copilot` with a CLI capability check, lint gate, confirmation, snapshots and a release-evidence log. |
+| **Environment profiles** | Mark environments as dev, test or prod. The stage shows next to each agent, production steps need the profile name typed (or are blocked), and `agent-forge env --deny prod` checks folders in CI. |
 | **Browser recipes** | Portal-only steps (add an MCP tool, capture a test trace, provision a SharePoint list, import a test set, verify a publish) run by Copilot agent mode through Playwright MCP, with consent gates. |
 | **CLI, CI and MCP** | `dist/cli.js` with SARIF output, `--fix` and exit codes, a guardrail git hook, and a read-only MCP server with eight tools. |
 | **Snippets and skills** | YAML snippets (`af-hitl`, `af-connected-agent`, `af-mcp-tool`, …), three expert skills and two custom agents for Copilot. |
@@ -42,7 +43,8 @@ Works with the **standard** harness (topics and actions) and the **GitHub Copilo
 |---|---|
 | Refresh Agents · Lint Workspace · Show Architecture Graph | Explore and check the workspace. Work offline and in untrusted workspaces. |
 | Apply All Safe Quick Fixes · Disable Lint Rule… | Fix or silence findings. |
-| Pull Agent · Push Agent as Draft · Publish Agent | `pac copilot pull/push/publish`. Needs workspace trust; snapshot and confirmation first; push and publish are blocked on lint errors unless you override. |
+| Pull Agent · Push Agent as Draft · Publish Agent | `pac copilot pull/push/publish`. Needs workspace trust; snapshot and confirmation first; push and publish are blocked on lint errors unless you override, and guarded by environment profiles. |
+| Add Environment Profile… | Saves the agent's environment (from `.mcs/conn.json`) or a typed URL as a dev, test or prod profile in workspace settings. |
 | New Orchestrator Blueprint… | Files only, or files plus live agents via `pac copilot init --environment` (trust and confirmation required). |
 | New Evaluation Test Set · Validate Evaluation CSV · Analyse Evaluation Results | Evaluation studio. Validate and analyse are also on the CSV context menu in the Explorer. |
 | Run Browser Recipe… · Configure Browser Co-pilot | Playwright MCP limited to Copilot Studio and Power Platform hosts, isolated profile by default. |
@@ -96,6 +98,7 @@ node dist/cli.js blueprint spec.json --out agents
 node dist/cli.js eval generate agents --agent contoso_ITAssistant --output evals/testset.csv
 node dist/cli.js eval validate evals/testset.csv
 node dist/cli.js eval analyze results.csv --format markdown
+node dist/cli.js env agents --deny prod                       # fail if a folder is linked to production
 node dist/cli.js mcp agents
 ```
 
@@ -112,6 +115,9 @@ MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
 |---|---|---|
 | `agentForge.pacPath` | `pac` | Path to the Power Platform CLI. |
 | `agentForge.lint.disabledRules` | `[]` | Rule ids to disable. |
+| `agentForge.environments` | `[]` | Profiles: `{ "name": "Contoso Dev", "kind": "dev", "url": "https://contoso-dev.crm.dynamics.com/" }` (or `id` with the environment GUID). |
+| `agentForge.productionGuard` | `confirm` | For prod profiles: `confirm` (type the profile name), `block` or `off`. |
+| `agentForge.requireEnvironmentProfile` | `false` | Refuse push, publish and creating agents in environments without a profile. |
 | `agentForge.browser.profile` | `isolated` | `isolated` (fresh in-memory browser) or `extension` (your signed-in Edge or Chrome through the Playwright extension). |
 
 ## Supported layouts
@@ -120,7 +126,9 @@ MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
   `capabilities/tools`, `capabilities/knowledge`, `infrastructure/connections`.
 - **Standard harness**: `agent.mcs.yml`, `settings.mcs.yml`, `topics/`, `actions/`,
   `knowledge/`, `variables/`, `agents/`.
-- `workflows/` (cloud flows) in both. Sync metadata (`.mcs/conn.json`) is used for publish.
+- `workflows/` (cloud flows) in both. Sync metadata (`.mcs/conn.json`) is used for publish and environment profiles.
+- Power Fx values written by the portal as plain scalars (for example `activity: ="Hi: " & User.DisplayName`)
+  are accepted even though they are not strict YAML.
 
 ## Requirements
 
@@ -143,8 +151,6 @@ MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
 
 ## Known limitations
 
-- Portal-generated Power Fx values such as `text: ="… : …"` are invalid strict YAML and are
-  reported as YAML001.
 - Evaluation-result analysis matches column names from the Copilot Studio export; edited
   headers may need renaming.
 

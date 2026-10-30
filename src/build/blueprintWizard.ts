@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { applyAgentPlan, blueprintReadme, planBlueprint, schemaFor, validateSpec, type BlueprintAgent, type BlueprintSpec } from '../core';
+import { applyAgentPlan, blueprintReadme, matchEnvironment, planBlueprint, schemaFor, targetFromInput, validateSpec, type BlueprintAgent, type BlueprintSpec } from '../core';
+import { environmentProfiles, passGuard } from '../lifecycle/environments';
 import type { Lifecycle } from '../lifecycle/lifecycle';
 import { pacInitArgs } from '../lifecycle/pacArgs';
 import type { Telemetry } from '../telemetry';
@@ -14,6 +15,31 @@ async function ask(prompt: string, value = '', validate?: (v: string) => string 
 }
 
 const purposeCheck = (v: string) => (v.trim().length < 15 ? 'Describe what it does in at least 15 characters.' : undefined);
+
+const KIND_ORDER = { dev: 0, test: 1, prod: 2 } as const;
+
+/** Environment profiles first (dev before test before prod), then a free-form URL or id. */
+async function pickEnvironment(): Promise<string | undefined> {
+  const profiles = [...environmentProfiles()].sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+  const typed = '$(edit) Enter a URL or environment id…';
+  if (profiles.length) {
+    const pick = await vscode.window.showQuickPick(
+      [
+        ...profiles.map((p) => ({ label: `${p.kind === 'prod' ? '$(warning) ' : ''}${p.name}`, description: p.kind, detail: p.url ?? p.id, value: p.url ?? p.id! })),
+        { label: typed, value: '' }
+      ],
+      { title, placeHolder: 'Environment for the new agents (use dev or test)', ignoreFocusOut: true }
+    );
+    if (!pick) return undefined;
+    if (pick.value) return pick.value;
+  }
+  return ask(
+    'Environment URL or id (use dev or test, not production)',
+    '',
+    (v) => (/^https:\/\/\S+$|^[0-9a-f-]{36}$/i.test(v) ? undefined : 'Enter an https URL or an environment id.'),
+    'https://contoso-dev.crm.dynamics.com/'
+  );
+}
 
 async function askAgent(kind: string, defaults: BlueprintAgent): Promise<BlueprintAgent | undefined> {
   const name = await ask(`${kind} name`, defaults.name, (v) => (!/[A-Za-z0-9]/.test(v) ? 'Use at least one letter or digit.' : v.length > 60 ? 'Keep it under 60 characters.' : undefined));
@@ -103,13 +129,9 @@ export async function newBlueprint(lifecycle: Lifecycle, telemetry: Telemetry): 
   if (!mode.live) {
     for (const p of plans) applyAgentPlan(path.join(root, p.folder), p);
   } else {
-    const environment = await ask(
-      'Environment URL or id (use dev or test, not production)',
-      '',
-      (v) => (/^https:\/\/\S+$|^[0-9a-f-]{36}$/i.test(v) ? undefined : 'Enter an https URL or an environment id.'),
-      'https://contoso-dev.crm.dynamics.com/'
-    );
+    const environment = await pickEnvironment();
     if (!environment) return;
+    if (!(await passGuard(matchEnvironment(targetFromInput(environment), environmentProfiles()), `create ${plans.length} agents`, telemetry))) return;
     const ok = await vscode.window.showWarningMessage(
       `Create ${plans.length} new agents (${plans.map((p) => p.schemaName).join(', ')}) in ${environment}? Each runs "pac copilot init --environment", which imports a solution. Existing agents are not changed.`,
       { modal: true },

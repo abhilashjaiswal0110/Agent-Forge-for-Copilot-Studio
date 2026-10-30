@@ -7,6 +7,7 @@ import {
   applyFixes,
   atLeast,
   blueprintReadme,
+  environmentReport,
   fixesFor,
   format,
   generateTestSet,
@@ -18,12 +19,15 @@ import {
   testSetCsv,
   toMermaid,
   TRIAGE_ADVICE,
+  usableProfiles,
+  validateProfiles,
   validateSpec,
   validateTestSet,
   type BlueprintSpec,
   type ReportFormat,
   type Severity
 } from '../core';
+import { parseMcpJson } from '../setup/mcpConfig';
 import { runStdioServer } from '../mcp/server';
 
 export interface CliIO {
@@ -47,6 +51,10 @@ Usage:
   agent-forge eval validate <file.csv>      Check a test set against the Copilot Studio import rules
   agent-forge eval analyze <results.csv> [--format text|json|markdown]
                                             Triage results exported from the Evaluate tab
+  agent-forge env [folders...] [--profiles <file.json>] [--deny <kinds>] [--format text|json]
+                                            Show the environment stage (dev, test, prod) of each agent folder.
+                                            Profiles come from --profiles or .vscode/settings.json
+                                            (agentForge.environments). --deny prod,unknown exits 1 on a match.
   agent-forge --version | --help
 
 Lint options:
@@ -65,7 +73,14 @@ interface Parsed {
   flags: Map<string, string | true>;
 }
 
-const VALUE_FLAGS = new Set(['format', 'output', 'fail-on', 'disable', 'agent', 'out']);
+const VALUE_FLAGS = new Set(['format', 'output', 'fail-on', 'disable', 'agent', 'out', 'profiles', 'deny']);
+
+/** Reads profiles from a JSON array, an object with `environments`, or a VS Code settings file (comments allowed). */
+export function readProfiles(file: string): unknown {
+  const json = parseMcpJson(readFileSync(file, 'utf8')) as Record<string, unknown> | unknown[];
+  if (Array.isArray(json)) return json;
+  return json['agentForge.environments'] ?? json.environments ?? [];
+}
 
 export function parseArgs(argv: string[]): Parsed {
   const [command = 'help', ...rest] = argv;
@@ -202,6 +217,26 @@ export async function runCli(argv: string[], io: CliIO): Promise<number> {
           return 0;
         }
         throw new Error('Usage: agent-forge eval generate [folder] | eval validate <file.csv> | eval analyze <results.csv>');
+      }
+      case 'env': {
+        const fmt = oneOf(p.flags.get('format'), ['text', 'json'] as const, 'text', 'format');
+        const explicit = p.flags.get('profiles');
+        const settings = resolve(io.cwd, '.vscode', 'settings.json');
+        const source = typeof explicit === 'string' ? resolve(io.cwd, explicit) : existsSync(settings) ? settings : undefined;
+        const raw = source ? readProfiles(source) : [];
+        for (const e of validateProfiles(raw)) io.err(`Ignored: ${e}`);
+        const rows = environmentReport(loadWorkspace(folders).agents, usableProfiles(raw));
+        const deny = typeof p.flags.get('deny') === 'string' ? (p.flags.get('deny') as string).split(',').map((s) => s.trim()) : [];
+        const bad = deny.filter((d) => !['dev', 'test', 'prod', 'unknown'].includes(d));
+        if (bad.length) throw new Error(`--deny accepts dev, test, prod, unknown (got ${bad.join(', ')})`);
+        if (fmt === 'json') io.out(JSON.stringify(rows, null, 2));
+        else {
+          for (const r of rows) io.out(`${r.kind.padEnd(8)} ${(r.schemaName ?? r.agent).padEnd(40)} ${r.label}`);
+          io.out(`${rows.length} agent(s); profiles from ${source ?? 'none'}.`);
+        }
+        const denied = rows.filter((r) => deny.includes(r.kind));
+        if (denied.length) io.err(`${denied.length} agent(s) target a denied stage: ${denied.map((r) => r.schemaName ?? r.agent).join(', ')}.`);
+        return denied.length ? 1 : 0;
       }
       default:
         io.err(`Unknown command "${p.command}".\n\n${USAGE}`);

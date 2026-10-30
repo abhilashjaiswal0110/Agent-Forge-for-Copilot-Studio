@@ -59,7 +59,7 @@ Differentiators against existing Copilot Studio extensions:
 | 3. Build | Orchestrator blueprint wizard, instruction and HITL templates, guardrail hooks | New user builds 1 orchestrator + 3 spokes + 1 write agent in < 60 min | **Done** (v0.3.0: wizard with files-only and live `pac copilot init` modes, snippets, git hook; generated agents lint clean and push and publish in the exit test) |
 | 4. Prove | Eval studio: CSV generator and validator, results analyser, failure triage | Generated CSVs import cleanly | **Done** (v0.3.0: generator, validator against the documented import rules, analyser with six triage categories) |
 | 5. Browser co-pilot | Portal recipes (add tool, test-pane trace capture, list provisioning) | Recipes run with consent prompts | **Done** (v0.3.0: five recipes with consent gates, Run Browser Recipe command, installed as prompt files) |
-| 6. GA | Hardening, environment profiles, docs site, accessibility, public MIT release, Open VSX | Quality bar met | Planned |
+| 6. GA | Hardening, environment profiles, docs site, accessibility, public MIT release, Open VSX | Quality bar met | **Started** (v0.4.0: environment profiles with production guard, Power Fx YAML tolerance, 0 npm audit findings) |
 
 ## 6. Quality bar
 
@@ -91,12 +91,15 @@ then push, and expect "pull first"). Run it manually once per pac major version.
 
 ## 7. Next steps
 
-1. Environment profiles (dev/test/prod mapping per agent folder) with a production guard.
+1. Public launch tasks in section 8: hero GIF, docs site, MIT licence, Open VSX.
 2. Publish the CLI and MCP server to npm so CI does not need the extension folder.
-3. Parser tolerance: portal-generated Power Fx values such as `text: ="... : ..."` are invalid
-   strict YAML and raise YAML001; decide whether to accept them with a dedicated info rule.
-4. Upgrade dev tooling majors (vitest 3+, esbuild 0.25+) to clear dev-only audit advisories.
-5. Public launch tasks in section 8: hero GIF, docs site, MIT licence, Open VSX.
+3. Promotion helper: export a managed solution from a dev profile and import it into test or
+   prod with `pac solution`, guarded by environment profiles.
+4. Accessibility pass on the graph webview (keyboard navigation, screen-reader labels).
+
+Done in v0.4.0: environment profiles (dev, test, prod) with a production guard, Power Fx
+plain-scalar tolerance (verified on real portal-generated topics), and dev tooling upgraded
+(vitest 5, vite 8, esbuild 0.28, vsce 4, test-electron 3) for 0 `npm audit` findings.
 ## 8. Go-to-market (at public launch)
 
 - Listing SEO: "Copilot Studio", "multi-agent", "orchestrator", "agents", "Power Platform";

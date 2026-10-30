@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import type { AgentModel, Component, ComponentCategory, Finding, WorkspaceModel } from '../core';
+import type { AgentModel, Component, ComponentCategory, EnvironmentMatch, Finding, WorkspaceModel } from '../core';
 
 const CATEGORY_LABEL: Record<ComponentCategory, string> = {
   skill: 'Skills',
@@ -41,6 +41,8 @@ export class AgentTreeProvider implements vscode.TreeDataProvider<Node> {
   private model: WorkspaceModel = { agents: [], parseErrors: [] };
   private findings: Finding[] = [];
 
+  constructor(private readonly environmentOf: (a: AgentModel) => EnvironmentMatch) {}
+
   update(model: WorkspaceModel, findings: Finding[]) {
     this.model = model;
     this.findings = findings;
@@ -53,11 +55,16 @@ export class AgentTreeProvider implements vscode.TreeDataProvider<Node> {
       const errors = this.findings.filter((f) => f.agent === a.name && f.severity === 'error').length;
       const warnings = this.findings.filter((f) => f.agent === a.name && f.severity === 'warning').length;
       const item = new vscode.TreeItem(a.name, vscode.TreeItemCollapsibleState.Collapsed);
-      item.description = `${HARNESS_LABEL[a.harness]}${errors || warnings ? ` · ${errors}E ${warnings}W` : ''}`;
+      const env = this.environmentOf(a);
+      const stage = env.kind === 'unknown' ? '' : `${env.kind.toUpperCase()} · `;
+      item.description = `${stage}${HARNESS_LABEL[a.harness]}${errors || warnings ? ` · ${errors}E ${warnings}W` : ''}`;
       item.tooltip = new vscode.MarkdownString(
-        `**${a.name}**\n\n- Harness: ${HARNESS_LABEL[a.harness]} (${a.harnessEvidence.join(', ') || 'no markers'})\n- Schema: \`${a.schemaName ?? 'n/a'}\`\n- Environment: ${a.sync.environmentDisplayName ?? 'not synced'}`
+        `**${a.name}**\n\n- Harness: ${HARNESS_LABEL[a.harness]} (${a.harnessEvidence.join(', ') || 'no markers'})\n- Schema: \`${a.schemaName ?? 'n/a'}\`\n- Environment: ${env.label}`
       );
-      item.iconPath = new vscode.ThemeIcon(a.components.some((c) => c.kind === 'ConnectedAgentTool') ? 'organization' : 'hubot');
+      item.iconPath = new vscode.ThemeIcon(
+        a.components.some((c) => c.kind === 'ConnectedAgentTool') ? 'organization' : 'hubot',
+        env.kind === 'prod' ? new vscode.ThemeColor('charts.red') : undefined
+      );
       item.contextValue = 'agent';
       item.resourceUri = vscode.Uri.file(a.root);
       return item;

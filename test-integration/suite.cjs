@@ -85,6 +85,17 @@ const tests = {
     assert.match(report.getText(), /no-answer/);
   },
 
+  async 'contributes environment profile settings and accepts a profile'() {
+    const cfg = vscode.workspace.getConfiguration('agentForge');
+    assert.equal(cfg.inspect('productionGuard').defaultValue, 'confirm');
+    assert.equal(cfg.inspect('requireEnvironmentProfile').defaultValue, false);
+    assert.deepEqual(cfg.inspect('environments').defaultValue, []);
+    const profiles = [{ name: 'Contoso Dev', kind: 'dev', url: 'https://contoso-dev.crm.dynamics.com/' }];
+    await cfg.update('environments', profiles, vscode.ConfigurationTarget.Workspace);
+    assert.deepEqual(vscode.workspace.getConfiguration('agentForge').get('environments'), profiles);
+    await vscode.commands.executeCommand('agentForge.refresh');
+  },
+
   async 'opens the walkthrough and graph without errors'() {
     await vscode.commands.executeCommand('agentForge.openWalkthrough');
     await vscode.commands.executeCommand('agentForge.showGraph');
