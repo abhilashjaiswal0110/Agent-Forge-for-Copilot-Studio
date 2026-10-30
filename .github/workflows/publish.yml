@@ -1,0 +1,65 @@
+name: Publish
+
+# Publishes to the Visual Studio Marketplace with Trusted Publishing (OIDC); no PAT is stored.
+# Marketplace policy: owner abhilashjaiswal0110, repository Copilotstudio-extension,
+# workflow publish.yml, environment marketplace (deployments limited to v* tags).
+# Release: bump "version" in package.json, update CHANGELOG.md, merge, then push tag v<version>.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Check the tag matches package.json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_TYPE}" != "tag" ] || [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::Run this workflow from tag v${version} (got ${GITHUB_REF_TYPE} ${GITHUB_REF_NAME})."
+            exit 1
+          fi
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Clean-room leak gate
+        run: npm run scan
+        env:
+          DENYLIST_PATTERNS: ${{ secrets.DENYLIST_PATTERNS }}
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: node dist/cli.js lint samples --fail-on warning
+
+      - name: Package
+        run: npx @vscode/vsce package --no-dependencies --out "cps-agent-forge-${VERSION}.vsix"
+      - name: Integration test of the VSIX being published
+        run: xvfb-run -a node test-integration/run.mjs "cps-agent-forge-${VERSION}.vsix"
+
+      - name: Publish to the Marketplace (Trusted Publishing)
+        run: npx @vscode/vsce publish --oidc --packagePath "cps-agent-forge-${VERSION}.vsix"
+
+      - name: GitHub release with the VSIX
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(awk -v v="## ${VERSION}" 'index($0, v)==1 {on=1; next} /^## / && on {exit} on' CHANGELOG.md)
+          gh release create "v${VERSION}" "cps-agent-forge-${VERSION}.vsix" --title "v${VERSION}" --notes "${notes:-See CHANGELOG.md}" --verify-tag

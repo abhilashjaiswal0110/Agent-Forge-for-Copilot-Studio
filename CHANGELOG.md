@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 – preview
+
+- Releases are published from GitHub Actions with Marketplace Trusted Publishing (OIDC): no
+  stored publishing token. Each release runs the full test gate and the VS Code integration test
+  on the exact VSIX it publishes, and attaches it to a GitHub release.
+
 ## 0.4.0 – preview
 
 - **Environment profiles**: `agentForge.environments` marks Dataverse environments as dev, test
