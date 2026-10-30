@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.3 – preview
+
+- Fix: findings are updated in place on every re-scan instead of being cleared and re-added, so the
+  Problems panel no longer flickers and quick fixes are always offered.
+- Security hardening from code scanning: Markdown escaping in evaluation reports, safe shell quoting
+  in the guardrail git hook, and atomic creation of `SKILL.md` by quick fixes.
+- Dev tooling: TypeScript 7.
+
 ## 0.4.2 – preview
 
 - Licensed under MIT; the source repository is public.
