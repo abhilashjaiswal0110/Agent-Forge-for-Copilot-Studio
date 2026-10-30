@@ -156,6 +156,6 @@ MCP tools (all read-only and offline): `list_rules`, `list_agents`, `lint`,
 
 ## License
 
-[MIT](https://github.com/abhilashjaiswal0110/Copilotstudio-extension/blob/main/LICENSE). Source, issues and security reports:
-[github.com/abhilashjaiswal0110/Copilotstudio-extension](https://github.com/abhilashjaiswal0110/Copilotstudio-extension)
+[MIT](https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio/blob/main/LICENSE). Source, issues and security reports:
+[github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio](https://github.com/abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio)
 (see SECURITY.md for private vulnerability reporting).

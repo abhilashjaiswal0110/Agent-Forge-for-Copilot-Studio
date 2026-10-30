@@ -37,7 +37,7 @@ store or rotate.
    `vsce publish --oidc`, and creates a GitHub release with the VSIX attached.
 
 The Marketplace policy (publisher **AbhilashJaiswal** → Trusted Publishing) must name owner
-`abhilashjaiswal0110`, repository `Copilotstudio-extension`, workflow `publish.yml` and
+`abhilashjaiswal0110`, repository `Agent-Forge-for-Copilot-Studio`, workflow `publish.yml` and
 environment `marketplace`. Because the repository is private, a new or reopened policy must be
 used within 48 hours; the first successful publish activates it permanently.
 
