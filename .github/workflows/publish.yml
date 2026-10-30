@@ -23,9 +23,13 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      attestations: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -40,8 +44,10 @@ jobs:
           fi
           echo "VERSION=${version}" >> "$GITHUB_ENV"
 
-      - name: Clean-room leak gate
-        run: npm run scan
+      - name: Clean-room leak gate (working tree and full published history)
+        run: |
+          npm run scan
+          npm run scan:history
         env:
           DENYLIST_PATTERNS: ${{ secrets.DENYLIST_PATTERNS }}
       - run: npm run typecheck
@@ -54,6 +60,13 @@ jobs:
       - name: Integration test of the VSIX being published
         run: xvfb-run -a node test-integration/run.mjs "cps-agent-forge-${VERSION}.vsix"
 
+      - name: Build provenance for the VSIX
+        # Artifact attestations are free for public repositories.
+        if: github.event.repository.visibility == 'public'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: cps-agent-forge-${{ env.VERSION }}.vsix
+
       - name: Publish to the Marketplace (Trusted Publishing)
         run: npx @vscode/vsce publish --oidc --packagePath "cps-agent-forge-${VERSION}.vsix"
 
@@ -62,4 +75,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           notes=$(awk -v v="## ${VERSION}" 'index($0, v)==1 {on=1; next} /^## / && on {exit} on' CHANGELOG.md)
-          gh release create "v${VERSION}" "cps-agent-forge-${VERSION}.vsix" --title "v${VERSION}" --notes "${notes:-See CHANGELOG.md}" --verify-tag
+          sha=$(sha256sum "cps-agent-forge-${VERSION}.vsix" | cut -d' ' -f1)
+          gh release create "v${VERSION}" "cps-agent-forge-${VERSION}.vsix" --repo "${GITHUB_REPOSITORY}" --title "v${VERSION}" \
+            --notes "${notes:-See CHANGELOG.md}"$'\n\n'"SHA-256 of the VSIX: \`${sha}\`" --verify-tag

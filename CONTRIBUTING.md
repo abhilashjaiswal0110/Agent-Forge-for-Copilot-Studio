@@ -7,6 +7,7 @@ See [.github/copilot-instructions.md](.github/copilot-instructions.md) for the c
 ```powershell
 npm ci
 npm run scan; npm run typecheck; npm test; npm run build   # gate before every commit
+npm run scan:history                                       # every published file version and commit message
 npm run package                                            # produces the .vsix
 npm run test:integration                                   # installs the newest .vsix into a downloaded VS Code and drives it
 ```
@@ -39,5 +40,8 @@ The Marketplace policy (publisher **AbhilashJaiswal** → Trusted Publishing) mu
 `abhilashjaiswal0110`, repository `Copilotstudio-extension`, workflow `publish.yml` and
 environment `marketplace`. Because the repository is private, a new or reopened policy must be
 used within 48 hours; the first successful publish activates it permanently.
+
+Security: [SECURITY.md](SECURITY.md). Going public: [docs/PUBLIC-RELEASE.md](docs/PUBLIC-RELEASE.md);
+repository settings: `node scripts/harden-repo.mjs`.
 
 Roadmap: [docs/PLAN.md](docs/PLAN.md). Rules: [docs/RULES.md](docs/RULES.md).
