@@ -2,7 +2,7 @@
   "name": "cps-agent-forge",
   "displayName": "Agent Forge for Copilot Studio",
   "description": "Design, lint, evaluate and ship multi-agent orchestrators for Microsoft Copilot Studio: architecture graph, 25 policy rules with quick fixes, blueprint wizard, evaluation studio, safe pac lifecycle, CLI/SARIF and MCP server.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "preview": true,
   "private": true,
   "publisher": "AbhilashJaiswal",

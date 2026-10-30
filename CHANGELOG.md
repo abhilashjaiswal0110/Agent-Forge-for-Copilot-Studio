@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4 – preview
+
+- The source repository is now `abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio`; Marketplace
+  source, issue and licence links point to it. The extension ID is unchanged, so existing installs
+  update normally.
+
 ## 0.4.3 – preview
 
 - Fix: findings are updated in place on every re-scan instead of being cleared and re-added, so the
