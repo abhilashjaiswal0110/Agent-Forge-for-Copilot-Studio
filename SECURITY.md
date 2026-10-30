@@ -23,6 +23,8 @@ Only the latest version on the Visual Studio Marketplace receives fixes.
 - Each release runs the full test suite and an integration test on the exact VSIX it publishes.
   The GitHub release lists the VSIX SHA-256 and, for the public repository, a build provenance
   attestation: `gh attestation verify cps-agent-forge-<version>.vsix --repo abhilashjaiswal0110/Agent-Forge-for-Copilot-Studio`.
+  Releases up to 0.4.3 were attested before the repository was renamed; verify those with
+  `--repo abhilashjaiswal0110/Copilotstudio-extension`.
 - Workflow actions are pinned to full commit SHAs, and the default workflow token is read-only.
 - The extension sends no content in telemetry, and commands that run external processes or
   write outside the workspace require workspace trust and an explicit confirmation.
