@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 – preview
+
+- Licensed under MIT; the source repository is public.
+- Release path hardened: GitHub Actions pinned to commit SHAs (Node 24), a leak scan over the full
+  published history before every release, VSIX build-provenance attestation and SHA-256 in release
+  notes, protected `main` and release tags, and an approval gate for Marketplace publishing.
+
 ## 0.4.1 – preview
 
 - Releases are published from GitHub Actions with Marketplace Trusted Publishing (OIDC): no

@@ -18,7 +18,7 @@ Do not use Microsoft logos or "Microsoft" in the name.
 | Topic | Decision |
 |---|---|
 | Publisher | `AbhilashJaiswal` (Marketplace publisher created; set in `package.json`) |
-| Visibility | Private repository and `private: true` until GA readiness, then MIT and public |
+| Visibility | Public repository under the MIT licence since v0.4.2 (`private: true` in package.json only blocks accidental npm publishing) |
 | Harnesses | Standard and GitHub Copilot (new agent experience), both first-class |
 | Browser co-pilot | Playwright MCP with an **isolated** profile by default; signed-in browser via `--extension` only by explicit setting |
 | Telemetry | On, usage events only, honours VS Code telemetry settings, no content |
@@ -59,7 +59,7 @@ Differentiators against existing Copilot Studio extensions:
 | 3. Build | Orchestrator blueprint wizard, instruction and HITL templates, guardrail hooks | New user builds 1 orchestrator + 3 spokes + 1 write agent in < 60 min | **Done** (v0.3.0: wizard with files-only and live `pac copilot init` modes, snippets, git hook; generated agents lint clean and push and publish in the exit test) |
 | 4. Prove | Eval studio: CSV generator and validator, results analyser, failure triage | Generated CSVs import cleanly | **Done** (v0.3.0: generator, validator against the documented import rules, analyser with six triage categories) |
 | 5. Browser co-pilot | Portal recipes (add tool, test-pane trace capture, list provisioning) | Recipes run with consent prompts | **Done** (v0.3.0: five recipes with consent gates, Run Browser Recipe command, installed as prompt files) |
-| 6. GA | Hardening, environment profiles, docs site, accessibility, public MIT release, Open VSX | Quality bar met | **Started** (v0.4.0: environment profiles with production guard, Power Fx YAML tolerance, 0 npm audit findings) |
+| 6. GA | Hardening, environment profiles, docs site, accessibility, public MIT release, Open VSX | Quality bar met | **Started** (v0.4.0: environment profiles, Power Fx YAML tolerance, 0 npm audit findings; v0.4.2: public repository, MIT, hardened release path) |
 
 ## 6. Quality bar
 
@@ -91,7 +91,7 @@ then push, and expect "pull first"). Run it manually once per pac major version.
 
 ## 7. Next steps
 
-1. Public launch tasks in section 8: hero GIF, docs site, MIT licence, Open VSX.
+1. Public launch tasks in section 8: hero GIF, docs site, Open VSX.
 2. Publish the CLI and MCP server to npm so CI does not need the extension folder.
 3. Promotion helper: export a managed solution from a dev profile and import it into test or
    prod with `pac solution`, guarded by environment profiles.

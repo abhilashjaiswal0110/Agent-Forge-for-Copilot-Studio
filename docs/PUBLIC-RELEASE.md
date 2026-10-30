@@ -54,9 +54,7 @@ already in the workflows and switch on automatically when the repository is publ
 
 ## 3. The switch
 
-1. Decide the licence. Today the repository is proprietary ("free to use", no redistribution);
-   the plan is MIT at GA. Public source under the current LICENSE is source-available, not open
-   source. Update LICENSE and the README licence section if you choose MIT.
+1. Licence: MIT (chosen 2026-10-30, released in v0.4.2).
 2. Run step 1 again.
 3. Settings → General → Danger Zone → Change visibility → Public.
 4. `node scripts/harden-repo.mjs` and check that every line says `ok`.

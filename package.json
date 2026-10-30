@@ -2,11 +2,11 @@
   "name": "cps-agent-forge",
   "displayName": "Agent Forge for Copilot Studio",
   "description": "Design, lint, evaluate and ship multi-agent orchestrators for Microsoft Copilot Studio: architecture graph, 25 policy rules with quick fixes, blueprint wizard, evaluation studio, safe pac lifecycle, CLI/SARIF and MCP server.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "preview": true,
   "private": true,
   "publisher": "AbhilashJaiswal",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/abhilashjaiswal0110/Copilotstudio-extension.git"
