@@ -24,7 +24,18 @@ export function quotePowerFxValues(text: string): string | undefined {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const lines = text.split(/\r?\n/);
   let changed = false;
+  let blockIndent = -1;
   for (let i = 0; i < lines.length; i++) {
+    const indent = lines[i].length - lines[i].trimStart().length;
+    // Inside a literal or folded block scalar: content, not YAML structure.
+    if (blockIndent >= 0) {
+      if (lines[i].trim() === '' || indent > blockIndent) continue;
+      blockIndent = -1;
+    }
+    if (/^\s*(?:-\s+)*(?:[^\s#'"][^:#]*?:\s+)?[|>][+-]?\d*[+-]?\s*(?:#.*)?$/.test(lines[i])) {
+      blockIndent = indent;
+      continue;
+    }
     const m = POWERFX_KEY.exec(lines[i]);
     if (!m) continue;
     const keyColumn = m[1].length;

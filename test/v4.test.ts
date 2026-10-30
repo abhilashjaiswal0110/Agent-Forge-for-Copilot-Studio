@@ -46,6 +46,16 @@ describe('Power Fx values in YAML', () => {
     expect(multi).toContain("v: '=If(x,\n    \"it''s: here\",\n    y)'\nnext: 1");
   });
 
+  it('leaves Power Fx-like text inside block scalars untouched', () => {
+    const text = 'instructions: |\n  Total: =Sum(a: b)\n  - item: =x: y\nmsg: ="a: b"\nnote: >-\n  k: =v: w\n';
+    const q = quotePowerFxValues(text)!;
+    expect(q).toBe('instructions: |\n  Total: =Sum(a: b)\n  - item: =x: y\nmsg: \'="a: b"\'\nnote: >-\n  k: =v: w\n');
+  });
+
+  it('keeps a skipped line in sync with the block end', () => {
+    expect(quotePowerFxValues('a: |\n  x: =y: z\nb: =c: d\n')).toBe("a: |\n  x: =y: z\nb: '=c: d'\n");
+  });
+
   it('parses portal-generated topics instead of reporting YAML001', () => {
     const root = fixture({
       'C/settings.mcs.yml': 'displayName: Classic\nschemaName: x_c\nconfiguration:\n  recognizer:\n    kind: GenerativeAIRecognizer\n',
