@@ -268,7 +268,7 @@ export function analyzeResults(text: string): EvalAnalysis {
   return analysis;
 }
 
-const cell = (s: string, max = 120) => s.replace(/\|/g, '\\|').replace(/\s+/g, ' ').slice(0, max) + (s.length > max ? '…' : '');
+const cell = (s: string, max = 120) => s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\s+/g, ' ').slice(0, max) + (s.length > max ? '…' : '');
 
 export function analysisMarkdown(a: EvalAnalysis, title = 'Evaluation results'): string {
   const rate = a.passed + a.failed ? Math.round((a.passed / (a.passed + a.failed)) * 100) : 0;

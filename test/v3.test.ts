@@ -192,6 +192,8 @@ describe('evaluation studio', () => {
     expect(md).toContain('**1/7 passed (14%)**');
     expect(md).toContain('## Failure triage');
     expect(analyzeResults('a,b\n1,2\n').missingColumns).toEqual(['question', 'response', 'result']);
+    const esc = analysisMarkdown(analyzeResults('Question,Agent response,Result\n"path C:\\a|b\\",x,Fail\n'));
+    expect(esc).toContain('path C:\\\\a\\|b\\\\');
   });
 });
 
@@ -255,7 +257,8 @@ describe('browser recipes', () => {
     const hook = preCommitHook('C:\\Users\\x\\ext\\dist\\cli.js');
     expect(hook.startsWith('#!/bin/sh\n')).toBe(true);
     expect(hook).toContain(HOOK_MARKER);
-    expect(hook).toContain('node "C:/Users/x/ext/dist/cli.js" lint . --fail-on error');
+    expect(hook).toContain("node 'C:/Users/x/ext/dist/cli.js' lint . --fail-on error");
+    expect(preCommitHook("/home/o'neil/$(rm -rf)/cli.js")).toContain(`node '/home/o'\\''neil/$(rm -rf)/cli.js' lint`);
   });
 
   it('every recipe has a description, targets the browser server and has consent or read-only rules', async () => {

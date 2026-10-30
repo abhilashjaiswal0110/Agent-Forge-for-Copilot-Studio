@@ -44,15 +44,22 @@ export function activate(context: vscode.ExtensionContext) {
     model = loadWorkspace(folders);
     findings = lint(model, { disabledRules: vscode.workspace.getConfiguration('agentForge').get<string[]>('lint.disabledRules', []) });
 
-    diagnostics.clear();
     const byFile = new Map<string, vscode.Diagnostic[]>();
     for (const f of findings) {
       const d = new vscode.Diagnostic(new vscode.Range(f.line, 0, f.line, Number.MAX_SAFE_INTEGER), f.message, SEVERITY[f.severity]);
       d.source = 'Agent Forge';
       d.code = f.ruleId;
-      byFile.set(f.file, [...(byFile.get(f.file) ?? []), d]);
+      const key = vscode.Uri.file(f.file).toString();
+      byFile.set(key, [...(byFile.get(key) ?? []), d]);
     }
-    for (const [file, list] of byFile) diagnostics.set(vscode.Uri.file(file), list);
+    // Update in place instead of clear() + set(): clearing empties the Problems panel and code-action
+    // context for a moment on every refresh.
+    const stale: vscode.Uri[] = [];
+    diagnostics.forEach((uri) => {
+      if (!byFile.has(uri.toString())) stale.push(uri);
+    });
+    for (const uri of stale) diagnostics.delete(uri);
+    for (const [uri, list] of byFile) diagnostics.set(vscode.Uri.parse(uri), list);
 
     tree.update(model, findings);
     GraphPanel.refresh(model, findings);
