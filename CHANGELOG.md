@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 – preview
+
+- **Environment profiles**: `agentForge.environments` marks Dataverse environments as dev, test
+  or prod (matched by environment id or URL from `.mcs/conn.json`). The Agent Forge view shows
+  the stage of each agent. Push, publish and the blueprint wizard's live mode follow
+  `agentForge.productionGuard` (`confirm`: type the profile name, `block`, `off`) and
+  `agentForge.requireEnvironmentProfile`. New command *Add Environment Profile*; the blueprint
+  wizard offers profiles; release evidence records the stage.
+- CLI `agent-forge env [folders] [--profiles file] [--deny prod,unknown]` for CI checks.
+- **Power Fx values** written by the portal as plain scalars (for example
+  `activity: ="Hi: " & User.DisplayName`) no longer raise YAML001.
+- Dev tooling upgraded (vitest 5, vite 8, esbuild 0.28, @vscode/vsce 4, @vscode/test-electron 3):
+  `npm audit` reports 0 vulnerabilities. CI runs on Node 22; the CLI still targets Node 20.
 ## 0.3.0 – preview
 
 - **Blueprint wizard** (*New Orchestrator Blueprint*): an orchestrator, read-only domain agents

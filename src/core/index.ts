@@ -10,3 +10,5 @@ export { format, formatText, formatJson, formatSarif, atLeast, summary } from '.
 export type { ReportFormat } from './report';
 export * from './blueprint';
 export * from './evals';
+export * from './environments';
+export { quotePowerFxValues } from './workspace';

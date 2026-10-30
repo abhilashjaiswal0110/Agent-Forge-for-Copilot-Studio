@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { fixesFor, lint, loadWorkspace, RULES, type AgentModel, type Finding, type WorkspaceModel } from './core';
 import { Lifecycle } from './lifecycle/lifecycle';
+import { addEnvironmentProfile, matchFor, warnInvalidProfiles } from './lifecycle/environments';
 import type { LifecycleStep } from './lifecycle/pacArgs';
 import { configureBrowser, configureLintServer, installGitHook, installSkills, runBrowserRecipe } from './setup/setupCommands';
 import { newBlueprint } from './build/blueprintWizard';
@@ -20,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Agent Forge');
   const telemetry = new Telemetry(String(context.extension.packageJSON.version));
   const diagnostics = vscode.languages.createDiagnosticCollection('agentForge');
-  const tree = new AgentTreeProvider();
+  const tree = new AgentTreeProvider(matchFor);
   const lifecycle = new Lifecycle(context, output, telemetry);
   const evalDiagnostics = vscode.languages.createDiagnosticCollection('agentForge.evals');
   const evals = new EvalCommands(evalDiagnostics, telemetry);
@@ -72,7 +73,11 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     watcher,
     vscode.workspace.onDidChangeWorkspaceFolders(scheduleRefresh),
-    vscode.workspace.onDidChangeConfiguration((e) => e.affectsConfiguration('agentForge') && scheduleRefresh()),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (!e.affectsConfiguration('agentForge')) return;
+      if (e.affectsConfiguration('agentForge.environments')) warnInvalidProfiles();
+      scheduleRefresh();
+    }),
     { dispose: () => timer && clearTimeout(timer) }
   );
 
@@ -158,6 +163,10 @@ export function activate(context: vscode.ExtensionContext) {
       return vscode.commands.executeCommand('workbench.action.openWalkthrough', `${context.extension.id}#agentForge.gettingStarted`, false);
     }),
     vscode.commands.registerCommand('agentForge.newBlueprint', () => newBlueprint(lifecycle, telemetry)),
+    vscode.commands.registerCommand('agentForge.addEnvironmentProfile', async (arg?: Node | vscode.Uri) => {
+      const agent = arg ? await pickAgent(arg) : undefined;
+      await addEnvironmentProfile(agent, telemetry);
+    }),
     vscode.commands.registerCommand('agentForge.openSample', async () => {
       const target = await vscode.window.showOpenDialog({ title: 'Folder to copy the Contoso sample into', canSelectFolders: true, canSelectFiles: false, openLabel: 'Copy sample here' });
       if (!target?.[0]) return;

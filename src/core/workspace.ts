@@ -12,6 +12,40 @@ export function readText(file: string): string {
   return readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
 }
 
+const POWERFX_KEY = /^(\s*(?:-\s+)*)([^\s#'"][^:#]*?):[ \t]+(=.*)$/;
+
+/**
+ * Copilot Studio writes Power Fx values as plain scalars, for example `activity: ="Hi: there"`. Those are
+ * invalid strict YAML when the formula contains ": ". Rewrites each such value (including plain
+ * continuation lines) as a single-quoted scalar, which folds lines the same way, without changing the
+ * line count. Returns undefined when nothing needed rewriting.
+ */
+export function quotePowerFxValues(text: string): string | undefined {
+  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  let changed = false;
+  for (let i = 0; i < lines.length; i++) {
+    const m = POWERFX_KEY.exec(lines[i]);
+    if (!m) continue;
+    const keyColumn = m[1].length;
+    let end = i;
+    while (end + 1 < lines.length) {
+      const next = lines[end + 1];
+      if (next.trim() === '' || (next.length - next.trimStart().length > keyColumn && !next.trimStart().startsWith('#'))) end++;
+      else break;
+    }
+    while (end > i && lines[end].trim() === '') end--;
+    const block = [m[3], ...lines.slice(i + 1, end + 1)];
+    if (!block.some((l) => /:\s/.test(l) || /:$/.test(l))) continue;
+    const esc = (s: string) => s.replace(/'/g, "''");
+    lines[i] = `${m[1]}${m[2]}: '${esc(block[0].trimEnd())}${end === i ? "'" : ''}`;
+    for (let j = i + 1; j <= end; j++) lines[j] = esc(lines[j].trimEnd()) + (j === end ? "'" : '');
+    changed = true;
+    i = end;
+  }
+  return changed ? lines.join(eol) : undefined;
+}
+
 export function readYaml(file: string, errors: ParseError[]): Yaml {
   let text: string;
   try {
@@ -21,8 +55,17 @@ export function readYaml(file: string, errors: ParseError[]): Yaml {
     errors.push({ file, message: `File could not be read (${(e as NodeJS.ErrnoException).code ?? 'error'}).`, line: 0 });
     return undefined;
   }
-  const lineCounter = new LineCounter();
-  const doc = parseDocument(text, { lineCounter, uniqueKeys: false, prettyErrors: false });
+  let lineCounter = new LineCounter();
+  let doc = parseDocument(text, { lineCounter, uniqueKeys: false, prettyErrors: false });
+  if (doc.errors.length) {
+    const tolerant = quotePowerFxValues(text);
+    if (tolerant !== undefined) {
+      // Same line count, so error positions of the tolerant parse map to the original file.
+      const retryCounter = new LineCounter();
+      doc = parseDocument(tolerant, { lineCounter: retryCounter, uniqueKeys: false, prettyErrors: false });
+      lineCounter = retryCounter;
+    }
+  }
   if (doc.errors.length) {
     const e = doc.errors[0];
     errors.push({ file, message: e.message.split('\n')[0], line: lineCounter.linePos(e.pos[0]).line - 1 });

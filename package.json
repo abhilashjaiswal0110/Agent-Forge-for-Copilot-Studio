@@ -2,7 +2,7 @@
   "name": "cps-agent-forge",
   "displayName": "Agent Forge for Copilot Studio",
   "description": "Design, lint, evaluate and ship multi-agent orchestrators for Microsoft Copilot Studio: architecture graph, 25 policy rules with quick fixes, blueprint wizard, evaluation studio, safe pac lifecycle, CLI/SARIF and MCP server.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "preview": true,
   "private": true,
   "publisher": "AbhilashJaiswal",
@@ -156,6 +156,11 @@
         "command": "agentForge.openSample",
         "title": "Open Contoso Sample",
         "category": "Agent Forge"
+      },
+      {
+        "command": "agentForge.addEnvironmentProfile",
+        "title": "Add Environment Profile...",
+        "category": "Agent Forge"
       }
     ],
     "viewsContainers": {
@@ -229,6 +234,11 @@
           "command": "agentForge.newTestSet",
           "when": "view == agentForge.agents && viewItem == agent",
           "group": "evals@1"
+        },
+        {
+          "command": "agentForge.addEnvironmentProfile",
+          "when": "view == agentForge.agents && viewItem == agent",
+          "group": "lifecycle@9"
         }
       ],
       "explorer/context": [
@@ -278,6 +288,77 @@
             "Playwright MCP attaches to your signed-in Edge/Chrome via the Playwright browser extension."
           ],
           "description": "Browser profile used by the browser co-pilot (Playwright MCP)."
+        },
+        "agentForge.environments": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Environment profiles. Agents are matched by the environment id or Dataverse URL in `.mcs/conn.json`; the stage is shown in the Agent Forge view and guards push, publish and the blueprint wizard. Use **Agent Forge: Add Environment Profile**.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "kind"
+            ],
+            "anyOf": [
+              {
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "required": [
+                  "id"
+                ]
+              }
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Short label, for example \"Contoso Dev\". Typed to confirm production steps."
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "dev",
+                  "test",
+                  "prod"
+                ],
+                "description": "Stage of the environment."
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://",
+                "description": "Dataverse environment URL, for example https://contoso-dev.crm.dynamics.com/"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "description": "Environment id (GUID)."
+              }
+            }
+          }
+        },
+        "agentForge.productionGuard": {
+          "type": "string",
+          "enum": [
+            "confirm",
+            "block",
+            "off"
+          ],
+          "default": "confirm",
+          "enumDescriptions": [
+            "Type the production profile name before push, publish or creating agents.",
+            "Refuse push, publish and creating agents in production environments.",
+            "No extra check for production."
+          ],
+          "description": "What to do before a step changes an environment whose profile is \"prod\"."
+        },
+        "agentForge.requireEnvironmentProfile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Refuse push, publish and creating agents when the target environment has no environment profile."
         }
       }
     },
@@ -407,13 +488,14 @@
     "yaml": "^2.6.0"
   },
   "devDependencies": {
-    "@types/node": "^20.17.0",
+    "@types/node": "^22.20.5",
     "@types/vscode": "^1.95.0",
-    "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.2.0",
-    "esbuild": "^0.24.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "bin": {
     "agent-forge": "./dist/cli.js"

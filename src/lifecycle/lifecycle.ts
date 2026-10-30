@@ -2,8 +2,9 @@ import { execFile } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { lint, loadWorkspace, type AgentModel } from '../core';
+import { hostOf, lint, loadWorkspace, type AgentModel } from '../core';
 import type { Telemetry } from '../telemetry';
+import { matchFor, passGuard } from './environments';
 import { pacArgs, pacSupports, pacVersion, type LifecycleStep } from './pacArgs';
 
 const MAX_SNAPSHOTS = 10;
@@ -116,8 +117,10 @@ export class Lifecycle {
       void vscode.window.showWarningMessage('Agent Forge: lifecycle commands require a trusted workspace.');
       return;
     }
+    const match = matchFor(agent);
+    const env = match.profile ? `${match.profile.name} (${match.kind})` : agent.sync.environmentDisplayName ?? hostOf(agent.sync.dataverseEndpoint) ?? agent.sync.environmentId ?? 'the environment linked to this workspace';
+    if ((step === 'push' || step === 'publish') && !(await passGuard(match, `${step} "${agent.name}"`, this.telemetry))) return;
     if (!(await this.preflight(step))) return;
-    const env = agent.sync.environmentDisplayName ?? agent.sync.environmentId ?? 'the environment linked to this workspace';
 
     if (step === 'push' || step === 'publish') {
       const findings = lint(loadWorkspace([path.dirname(agent.root)]), {
@@ -172,8 +175,8 @@ export class Lifecycle {
     this.output.appendLine(`[${step}] pac ${args.join(' ')}`);
     const started = Date.now();
     const exitCode = await this.runPac(agent, step, args);
-    this.evidence({ step, agent: agent.name, harness: agent.harness, exitCode, durationMs: Date.now() - started, snapshot });
-    this.telemetry.event(`lifecycle.${step}`, { harness: agent.harness, success: String(exitCode === 0) }, { durationMs: Date.now() - started });
+    this.evidence({ step, agent: agent.name, harness: agent.harness, environment: match.profile?.name, environmentKind: match.kind, exitCode, durationMs: Date.now() - started, snapshot });
+    this.telemetry.event(`lifecycle.${step}`, { harness: agent.harness, environmentKind: match.kind, success: String(exitCode === 0) }, { durationMs: Date.now() - started });
 
     if (exitCode === 0) {
       const next = step === 'pull' ? 'Edit, lint, then push.' : step === 'push' ? 'Draft created. Publish when ready, then test in Preview.' : 'Published. Pull again to confirm no pending changes, then run your tests.';
