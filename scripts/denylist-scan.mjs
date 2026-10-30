@@ -20,7 +20,10 @@ const builtIn = [
   {
     id: 'EMAIL',
     re: /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/gi,
-    allow: (m) => /@(example\.(com|org)|contoso\.com|fabrikam\.com|users\.noreply\.github\.com)$/i.test(m)
+    allow: (m) =>
+      /@(example\.(com|org)|contoso\.com|fabrikam\.com|users\.noreply\.github\.com)$/i.test(m) ||
+      // GitHub's own bot addresses, for example in Dependabot sign-offs.
+      /^(noreply|support|actions|dependabot\[bot\])@github\.com$/i.test(m)
   }
 ];
 
